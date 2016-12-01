@@ -10,6 +10,7 @@ class DIAValidationPlugin(plugins.SingletonPlugin):
 
     def get_validators(self):
         return {
+            'force_lower': validators.force_lower,
             'natural_num_or_missing': validators.natural_num_or_missing,
             'isodate': validators.isodate,
             'extra_key_not_in_root_schema': validators.extra_key_not_in_root_schema
