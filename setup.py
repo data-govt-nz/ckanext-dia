@@ -24,7 +24,7 @@ setup(
     """
     [ckan.plugins]
     diavalidation=ckanext.dia.plugin:DIAValidationPlugin
-    diaschema=ckanext.dia.plugin::DIASchemaPlugin
-    diaactions=ckanext.dia.plugin::DIAActionsPlugin
+    diaschema=ckanext.dia.plugin:DIASchemaPlugin
+    diaactions=ckanext.dia.plugin:DIAActionsPlugin
     """,
 )
