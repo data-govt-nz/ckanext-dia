@@ -1,8 +1,9 @@
 # encoding: utf-8
 
 import ckan.plugins as plugins
+import ckan.logic.schema
 
-from ckanext.dia import validators
+from ckanext.dia import validators, schema
 
 
 class DIAValidationPlugin(plugins.SingletonPlugin):
@@ -15,3 +16,11 @@ class DIAValidationPlugin(plugins.SingletonPlugin):
             'isodate': validators.isodate,
             'extra_key_not_in_root_schema': validators.extra_key_not_in_root_schema
         }
+
+
+class DIASchemaPlugin(plugins.SingletonPlugin):
+    plugins.implements(p.IConfigurer)
+
+    def update_config(self, config):
+        # monkeypatching default_extras_schema to add `theme` key.
+        ckan.logic.schema.default_extras_schema = schema.default_extras_schema

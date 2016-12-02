@@ -17,3 +17,4 @@ All plugins need to be added to `ckan.plugins` in your config file. Available
 plugins are:
 
 * `diavalidation` -- Exposes extra validators, such as `natural_num_or_missing`
+* `diaschema` -- DIA-related changes to CKAN schema
