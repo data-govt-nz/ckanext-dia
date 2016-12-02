@@ -10,6 +10,8 @@ import ckan.model as model
 import ckan.plugins as plugins
 import ckan.lib.plugins as lib_plugins
 
+from ckan.logic.action.get import _add_tracking_summary_to_resource_dict
+
 from ckan.common import _
 
 log = logging.getLogger('ckan.logic')
