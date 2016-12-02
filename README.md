@@ -18,3 +18,4 @@ plugins are:
 
 * `diavalidation` -- Exposes extra validators, such as `natural_num_or_missing`
 * `diaschema` -- DIA-related changes to CKAN schema
+* `diaactions` -- Disables the use of caching for showing packages
