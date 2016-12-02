@@ -4,7 +4,7 @@ import ckan.plugins as plugins
 import ckan.logic.schema
 
 from ckanext.dia import validators, schema
-from ckanext.action import get
+from ckanext.dia.action import get
 
 
 class DIAValidationPlugin(plugins.SingletonPlugin):
