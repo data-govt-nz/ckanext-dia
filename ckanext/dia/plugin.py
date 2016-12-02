@@ -4,6 +4,7 @@ import ckan.plugins as plugins
 import ckan.logic.schema
 
 from ckanext.dia import validators, schema
+from ckanext.action import get
 
 
 class DIAValidationPlugin(plugins.SingletonPlugin):
@@ -19,8 +20,15 @@ class DIAValidationPlugin(plugins.SingletonPlugin):
 
 
 class DIASchemaPlugin(plugins.SingletonPlugin):
-    plugins.implements(p.IConfigurer)
+    plugins.implements(plugins.IConfigurer)
 
     def update_config(self, config):
         # monkeypatching default_extras_schema to add `theme` key.
         ckan.logic.schema.default_extras_schema = schema.default_extras_schema
+
+
+class DIAActionsPlugin(plugins.SingletonPlugin):
+    plugins.implements(plugins.IActions)
+
+    def get_actions(self):
+        return {'package_show': get.package_show}
