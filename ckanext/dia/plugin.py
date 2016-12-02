@@ -4,7 +4,7 @@ import ckan.plugins as plugins
 import ckan.logic.schema
 import ckan.logic.validators
 
-from ckanext.dia import validators, schema
+from ckanext.dia import validators, schema, converters
 from ckanext.dia.action import get
 
 
@@ -15,12 +15,12 @@ class DIAValidationPlugin(plugins.SingletonPlugin):
     def update_config(self, config):
         # monkeypatching isodate and extra_key_not_in_root_schema validators
         ckan.logic.validators.isodate = validators.isodate
-        ckan.logic.validators.extra_key_not_in_root_schema = validators.extra_key_not_in_root_schema
 
     def get_validators(self):
         return {
             'force_lower': validators.force_lower,
             'natural_num_or_missing': validators.natural_num_or_missing,
+            'fix_code_style_list': converters.fix_code_style_list
         }
 
 
