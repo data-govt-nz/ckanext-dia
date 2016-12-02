@@ -2,19 +2,24 @@
 
 import ckan.plugins as plugins
 import ckan.logic.schema
+import ckan.logic.validators
 
 from ckanext.dia import validators, schema
 from ckanext.dia.action import get
 
 
 class DIAValidationPlugin(plugins.SingletonPlugin):
+    plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IValidators)
+
+    def update_config(self, config):
+        # monkeypatching isodate validator to add `theme` key.
+        ckan.logic.validators.isodate = validators.isodate
 
     def get_validators(self):
         return {
             'force_lower': validators.force_lower,
             'natural_num_or_missing': validators.natural_num_or_missing,
-            'isodate': validators.isodate,
             'extra_key_not_in_root_schema': validators.extra_key_not_in_root_schema
         }
 
