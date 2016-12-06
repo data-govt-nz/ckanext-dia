@@ -26,5 +26,6 @@ setup(
     diavalidation=ckanext.dia.plugin:DIAValidationPlugin
     diaschema=ckanext.dia.plugin:DIASchemaPlugin
     diaactions=ckanext.dia.plugin:DIAActionsPlugin
+    diaharvester=ckanext.dia.plugin:DIASpatialHarvester
     """,
 )
