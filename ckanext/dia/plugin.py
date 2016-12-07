@@ -9,6 +9,8 @@ from ckanext.dia.action import get
 
 from ckanext.spatial.interfaces import ISpatialHarvester
 
+from .harvester import DIADocument
+
 
 class DIAValidationPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
@@ -49,11 +51,18 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
 
+        dia_values = DIADocument(data_dict['harvest_object'].content).read_values()
+
+        package_dict.update(dia_values)
+
         package_issued = iso_values['date-released']
         package_modified = iso_values['date-updated']
 
         package_dict['issued'] = package_issued
+        package_dict['created'] = package_issued
+
         package_dict['modified'] = package_modified
+        package_dict['last_modified'] = package_modified
 
         # Override resource name, set it to package title if unset
         RESOURCE_NAME_CKAN_DEFAULT = plugins.toolkit._('Unnamed resource')
