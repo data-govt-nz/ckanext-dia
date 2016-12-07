@@ -53,6 +53,18 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         dia_values = DIADocument(data_dict['harvest_object'].content).read_values()
 
+        if 'language' in dia_values:
+            try:
+                dia_values['language'] = pycountry.languages.get(alpha_3=dia_values['language']).name
+            except KeyError:
+                pass
+
+        if 'jurisdiction' in dia_values:
+            try:
+                dia_values['jurisdiction'] = pycountry.countries.get(alpha_3=dia_values['jurisdiction'].upper()).name
+            except KeyError:
+                pass
+
         package_dict.update(dia_values)
 
         package_issued = iso_values['date-released']
