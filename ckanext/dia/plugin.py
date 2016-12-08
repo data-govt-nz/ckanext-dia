@@ -11,6 +11,11 @@ from ckanext.spatial.interfaces import ISpatialHarvester
 
 from .harvester import DIADocument
 
+import pycountry
+from logging import getLogger
+
+log = getLogger(__name__)
+
 
 class DIAValidationPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
@@ -65,7 +70,18 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             except KeyError:
                 pass
 
-        package_dict.update(dia_values)
+        dia_mappings = {
+            'language': lambda x: x['language'],
+            'jurisdiction': lambda x: x['jurisdiction'],
+            'maintainer_phone': lambda x: x['metadata-point-of-contact'][0]['contact-info']['phone'],
+            'rights': _filter_rights
+        }
+
+        for k, v in dia_mappings.items():
+            try:
+                package_dict[k] = v(dia_values)
+            except KeyError, IndexError:
+                pass
 
         package_issued = iso_values['date-released']
         package_modified = iso_values['date-updated']
@@ -75,6 +91,18 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         package_dict['modified'] = package_modified
         package_dict['last_modified'] = package_modified
+
+        iso_mappings = {
+            'author': lambda x: x['metadata-point-of-contact'][0]['organisation-name'],
+            'maintainer': lambda x: x['metadata-point-of-contact'][0]['position-name'],
+            'maintainer_email': lambda x: x['metadata-point-of-contact'][0]['contact-info']['email']
+        }
+
+        for k, v in iso_mappings.items():
+            try:
+                package_dict[k] = v(iso_values)
+            except KeyError, IndexError:
+                pass
 
         # Override resource name, set it to package title if unset
         RESOURCE_NAME_CKAN_DEFAULT = plugins.toolkit._('Unnamed resource')
@@ -88,4 +116,16 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             resource['resource_created'] = package_issued
             resource['last_modified'] = package_modified
 
+        log.debug(iso_values)
+        log.debug(package_dict)
+
         return package_dict
+
+
+def _filter_rights(dia_values):
+    # Pull out 'use_limitation' for the first item that has 'use_constraints' set to
+    # copyright or intellectualPropertyRights
+    # If we raise a KeyError or IndexError, the item is skipped - which is what we want
+    # if we can't find the value we want
+    candidates = [x for x in dia_values['rights'] if x['use_constraints'] in ('copyright', 'intellectualPropertyRights')]
+    return candidates[0]['use_limitation']
