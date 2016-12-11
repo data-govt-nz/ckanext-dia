@@ -116,6 +116,11 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             resource['resource_created'] = package_issued
             resource['last_modified'] = package_modified
 
+        try:
+            package_dict['frequency_of_update'] = _get_object_extra(package_dict, 'frequency-of-update')
+        except KeyError:
+            pass
+
         log.debug(iso_values)
         log.debug(package_dict)
 
@@ -129,3 +134,15 @@ def _filter_rights(dia_values):
     # if we can't find the value we want
     candidates = [x for x in dia_values['rights'] if x['use_constraints'] in ('copyright', 'intellectualPropertyRights')]
     return candidates[0]['use_limitation']
+
+
+def _get_object_extra(harvest_object, key):
+    '''
+    Helper function for retrieving the value from a harvest object extra,
+    given the key
+    From ckanext.spatial.harvesters.base
+    '''
+    for extra in harvest_object['extras']:
+        if extra['key'] == key:
+            return extra['value']
+    raise KeyError(key)
