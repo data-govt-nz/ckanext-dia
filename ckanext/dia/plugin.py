@@ -9,10 +9,13 @@ from ckanext.dia.action import get
 
 from ckanext.spatial.interfaces import ISpatialHarvester
 
+from ckanext.dcat.harvesters import DCATJSONHarvester
+
 from .harvester import DIADocument
 
 import pycountry
 from logging import getLogger
+from string import Template
 
 log = getLogger(__name__)
 
@@ -146,3 +149,49 @@ def _get_object_extra(harvest_object, key):
         if extra['key'] == key:
             return extra['value']
     raise KeyError(key)
+
+
+class DIADCATJSONHarvester(DCATJSONHarvester):
+
+    extent_template = Template('''
+    {"type": "Polygon", "coordinates": [[[$xmin, $ymin], [$xmax, $ymin], [$xmax, $ymax], [$xmin, $ymax], [$xmin, $ymin]]]}
+    ''')
+
+    def _clean_email(self, email):
+        if email.startswith("mailto:"):
+            email = email[7:]
+        return email
+
+    def _clean_spatial(self, spatial):
+        # Convert things like "173.0039,-42.3167,174.2099,-41.0717" to
+        # Polygon using templates from CSW
+        xmin, ymin, xmax, ymax = spatial.split(',')
+        return self.extent_template.substitute(
+            xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax
+        ).strip()
+
+    def _get_package_dict(self, harvest_object):
+        package_dict, dcat_dict = super(DIADCATJSONHarvester, self)._get_package_dict(harvest_object)
+
+        log.debug(package_dict)
+        log.debug(dcat_dict)
+
+        for k, v in {
+                'issued': lambda x: x['issued'],
+                'modified': lambda x: x['modified'],
+                'author': lambda x: x['publisher']['name'],
+                'maintainer': lambda x: x['contactPoint']['fn'],
+                'maintainer_email': lambda x: self._clean_email(x['contactPoint']['hasEmail']),
+                'maintainer_phone': lambda x: x['contactPoint']['hasTelephone'],
+                'theme': lambda x: x['theme'][0],
+                'rights': lambda x: x['rights'],  # Not tested
+                'frequency_of_update': lambda x: x['accrualPeriodicity'],  # Not tested
+                'spatial': lambda x: self._clean_spatial(x['spatial']),
+                'language': lambda x: x['language']
+        }.items():
+            try:
+                package_dict[k] = v(dcat_dict)
+            except KeyError, IndexError:
+                pass
+
+        return package_dict, dcat_dict
