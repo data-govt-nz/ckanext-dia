@@ -1,24 +1,22 @@
 # encoding: utf-8
+from logging import getLogger
+from string import Template
+
+import pycountry
+import requests
 
 import ckan.plugins as plugins
 import ckan.logic.schema
 import ckan.logic.validators
-
-from ckanext.dia import validators, schema, converters
-from ckanext.dia.action import get
-
-from ckanext.spatial.interfaces import ISpatialHarvester
-
-from ckanext.dcat.harvesters import DCATJSONHarvester
 from ckan.logic.action.get import license_list
 from ckan import model
 
-from .harvester import DIADocument
+from ckanext.spatial.interfaces import ISpatialHarvester
+from ckanext.dcat.harvesters import DCATJSONHarvester
 
-import pycountry
-from logging import getLogger
-from string import Template
-import requests
+from ckanext.dia import validators, schema, converters
+from ckanext.dia.action import get
+from .harvester import DIADocument
 
 log = getLogger(__name__)
 
@@ -127,8 +125,8 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         except KeyError:
             pass
 
-        log.debug(iso_values)
-        log.debug(package_dict)
+        log.debug("CSW iso_values: {}".format(iso_values))
+        log.debug("CSW package_dict: {}".format(package_dict))
 
         return package_dict
 
@@ -185,7 +183,6 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             resp = requests.get(license_url)
             resp.raise_for_status()
             license_data = resp.json()
-            log.debug(license_data)
             for lics in licenses:  # 'license' is a global. TIL
                 if self._normalize_licence(lics['title']) == self._normalize_licence(license_data.get('title', '')) or \
                    self._normalize_licence(lics['title']) == self._normalize_licence(license_data.get('description', '')) or \
@@ -199,28 +196,30 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
     def _get_package_dict(self, harvest_object):
         package_dict, dcat_dict = super(DIADCATJSONHarvester, self)._get_package_dict(harvest_object)
 
-        log.debug(package_dict)
-        log.debug(dcat_dict)
+        mappings = {
+            'issued': lambda x: x['issued'],
+            'modified': lambda x: x['modified'],
+            'author': lambda x: x['publisher']['name'],
+            'maintainer': lambda x: x['contactPoint']['fn'],
+            'maintainer_email': lambda x: self._clean_email(x['contactPoint']['hasEmail']),
+            'maintainer_phone': lambda x: x['contactPoint']['hasTelephone'],
+            'theme': lambda x: x['theme'][0],
+            'rights': lambda x: x['rights'],  # Not tested
+            'frequency_of_update': lambda x: x['accrualPeriodicity'],  # Not tested
+            'spatial': lambda x: self._clean_spatial(x['spatial']),
+            'language': lambda x: x['language'],
+            'source_identifier': lambda x: x['identifier'],
+            'license_url': lambda x: x['license'],
+            'license_id': lambda x: self._fetch_license_id(x['license'])
+        }
 
-        for k, v in {
-                'issued': lambda x: x['issued'],
-                'modified': lambda x: x['modified'],
-                'author': lambda x: x['publisher']['name'],
-                'maintainer': lambda x: x['contactPoint']['fn'],
-                'maintainer_email': lambda x: self._clean_email(x['contactPoint']['hasEmail']),
-                'maintainer_phone': lambda x: x['contactPoint']['hasTelephone'],
-                'theme': lambda x: x['theme'][0],
-                'rights': lambda x: x['rights'],  # Not tested
-                'frequency_of_update': lambda x: x['accrualPeriodicity'],  # Not tested
-                'spatial': lambda x: self._clean_spatial(x['spatial']),
-                'language': lambda x: x['language'],
-                'source_identifier': lambda x: x['identifier'],
-                'license_url': lambda x: x['license'],
-                'license_id': lambda x: self._fetch_license_id(x['license'])
-        }.items():
+        for k, v in mappings.items():
             try:
                 package_dict[k] = v(dcat_dict)
             except KeyError, IndexError:
                 pass
+
+        log.debug("DCAT package_dict: {}".format(package_dict))
+        log.debug("DCAT dcat_dict: {}".format(dcat_dict))
 
         return package_dict, dcat_dict
