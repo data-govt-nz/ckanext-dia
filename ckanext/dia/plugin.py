@@ -10,12 +10,15 @@ from ckanext.dia.action import get
 from ckanext.spatial.interfaces import ISpatialHarvester
 
 from ckanext.dcat.harvesters import DCATJSONHarvester
+from ckan.logic.action.get import license_list
+from ckan import model
 
 from .harvester import DIADocument
 
 import pycountry
 from logging import getLogger
 from string import Template
+import requests
 
 log = getLogger(__name__)
 
@@ -170,6 +173,29 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax
         ).strip()
 
+    def _normalize_licence(self, licence):
+        """
+        Noone can agree on the spelling of license in their description, so we have to normalize
+        """
+        return licence.lower().replace('licence', 'license')
+
+    def _fetch_license_id(self, license_url):
+        licenses = license_list({'model': model}, {})
+        try:
+            resp = requests.get(license_url)
+            resp.raise_for_status()
+            license_data = resp.json()
+            log.debug(license_data)
+            for lics in licenses:  # 'license' is a global. TIL
+                if self._normalize_licence(lics['title']) == self._normalize_licence(license_data.get('title', '')) or \
+                   self._normalize_licence(lics['title']) == self._normalize_licence(license_data.get('description', '')) or \
+                   lics['url'] == license_data.get('link', ''):
+                    log.debug("Using license {}".format(lics['id']))
+                    return lics['id']
+        except Exception as e:
+            log.exception("Failed to retrieve license data")
+            return None
+
     def _get_package_dict(self, harvest_object):
         package_dict, dcat_dict = super(DIADCATJSONHarvester, self)._get_package_dict(harvest_object)
 
@@ -187,7 +213,10 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                 'rights': lambda x: x['rights'],  # Not tested
                 'frequency_of_update': lambda x: x['accrualPeriodicity'],  # Not tested
                 'spatial': lambda x: self._clean_spatial(x['spatial']),
-                'language': lambda x: x['language']
+                'language': lambda x: x['language'],
+                'source_identifier': lambda x: x['identifier'],
+                'license_url': lambda x: x['license'],
+                'license_id': lambda x: self._fetch_license_id(x['license'])
         }.items():
             try:
                 package_dict[k] = v(dcat_dict)
