@@ -1,4 +1,5 @@
 # encoding: utf-8
+from logging import getLogger
 
 import ckan.plugins as plugins
 import ckan.logic.schema
@@ -7,7 +8,7 @@ import ckan.logic.validators
 from ckanext.dia import validators, schema, converters
 from ckanext.dia.action import get
 
-from ckanext.spatial.interfaces import ISpatialHarvester
+log = getLogger(__name__)
 
 
 class DIAValidationPlugin(plugins.SingletonPlugin):
@@ -40,32 +41,3 @@ class DIAActionsPlugin(plugins.SingletonPlugin):
 
     def get_actions(self):
         return {'package_show': get.package_show}
-
-
-class DIASpatialHarvester(plugins.SingletonPlugin):
-    plugins.implements(ISpatialHarvester, inherit=True)
-
-    def get_package_dict(self, context, data_dict):
-
-        package_dict = data_dict['package_dict']
-        iso_values = data_dict['iso_values']
-
-        package_issued = iso_values['date-released']
-        package_modified = iso_values['date-updated']
-
-        package_dict['issued'] = package_issued
-        package_dict['modified'] = package_modified
-
-        # Override resource name, set it to package title if unset
-        RESOURCE_NAME_CKAN_DEFAULT = plugins.toolkit._('Unnamed resource')
-        package_title = package_dict.get('title', RESOURCE_NAME_CKAN_DEFAULT)
-        for resource in package_dict['resources']:
-            if resource['name'] == RESOURCE_NAME_CKAN_DEFAULT:
-                resource['name'] = package_title
-
-            # Set resouce_created and last_modified on resources to be
-            # date-released and date-updated from the dataset respectively
-            resource['resource_created'] = package_issued
-            resource['last_modified'] = package_modified
-
-        return package_dict

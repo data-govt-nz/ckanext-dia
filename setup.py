@@ -18,7 +18,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        # -*- Extra requirements: -*-
+        "pycountry"
     ],
     entry_points=\
     """
@@ -26,6 +26,7 @@ setup(
     diavalidation=ckanext.dia.plugin:DIAValidationPlugin
     diaschema=ckanext.dia.plugin:DIASchemaPlugin
     diaactions=ckanext.dia.plugin:DIAActionsPlugin
-    diaharvester=ckanext.dia.plugin:DIASpatialHarvester
+    diaharvester=ckanext.dia.harvester.csw:DIASpatialHarvester
+    diadcatjsonharvester=ckanext.dia.harvester.dcat:DIADCATJSONHarvester
     """,
 )
