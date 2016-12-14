@@ -1,5 +1,6 @@
 from logging import getLogger
 from string import Template
+import json
 
 import requests
 
@@ -82,3 +83,25 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         log.debug("DCAT dcat_dict: {}".format(dcat_dict))
 
         return package_dict, dcat_dict
+
+    def modify_package_dict(self, package_dict, dcat_dict, harvest_object):
+        conf = json.loads(harvest_object.source.config)
+
+        tags = package_dict.get('tags', [])
+        tags.extend(conf.get('default_tags', []))
+        package_dict['tags'] = dict((tag['name'], tag) for tag in tags).values()
+
+        log.error(harvest_object.source.config)
+
+        context = {'model': model, 'user': p.toolkit.c.user}
+        groups = []
+        for group_name_or_id in conf.get('default_groups', []):
+            try:
+                group = p.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
+                groups.append({'id': group['id'], 'name': group['name']})
+            except p.toolkit.ObjectNotFound, e:
+                logging.error('Default group %s not found, proceeding without.' % group_name_or_id)
+                pass
+
+        package_dict['groups'] = dict((group['name'], group) for group in groups).values()
+        return package_dict
