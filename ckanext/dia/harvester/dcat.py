@@ -93,13 +93,13 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
 
         log.error(harvest_object.source.config)
 
-        context = {'model': model, 'user': p.toolkit.c.user}
+        context = {'model': model, 'user': plugins.toolkit.c.user}
         groups = []
         for group_name_or_id in conf.get('default_groups', []):
             try:
-                group = p.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
+                group = plugins.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
                 groups.append({'id': group['id'], 'name': group['name']})
-            except p.toolkit.ObjectNotFound, e:
+            except plugins.toolkit.ObjectNotFound, e:
                 logging.error('Default group %s not found, proceeding without.' % group_name_or_id)
                 pass
 
