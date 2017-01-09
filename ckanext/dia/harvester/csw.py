@@ -3,7 +3,7 @@ from logging import getLogger
 
 import ckan.plugins as plugins
 from ckanext.spatial.interfaces import ISpatialHarvester
-from ckanext.spatial.model import MappedXmlDocument, ISOElement
+from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
 
 log = getLogger(__name__)
 
@@ -86,6 +86,14 @@ class DIADocument(MappedXmlDocument):
                 "gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceConstraints/gmd:MD_LegalConstraints"
             ],
             multiplicity="*"
+        ),
+        ISODataFormat(
+            name="data-format",
+            search_paths=[
+                "gmd:distributionInfo/gmd:MD_Distribution/gmd:distributionFormat/gmd:MD_Format",
+                "gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceFormat/gmd:MD_Format"
+            ],
+            multiplicity="*",
         )
     ]
 
@@ -116,7 +124,8 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             'language': lambda x: x['language'],
             'jurisdiction': lambda x: x['jurisdiction'],
             'maintainer_phone': lambda x: x['metadata-point-of-contact'][0]['contact-info']['phone'],
-            'rights': _filter_rights
+            'rights': _filter_rights,
+            'format': lambda x: _filter_format(x['data-format'][0]['name'])
         }
 
         for k, v in dia_mappings.items():
@@ -158,6 +167,8 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             resource['resource_created'] = package_issued
             resource['last_modified'] = package_modified
 
+            resource['format'] = _filter_format(dia_values['data-format'][0]['name'])
+
         try:
             package_dict['frequency_of_update'] = _get_object_extra(package_dict, 'frequency-of-update')
         except KeyError:
@@ -165,6 +176,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         log.debug("CSW iso_values: {}".format(iso_values))
         log.debug("CSW package_dict: {}".format(package_dict))
+        log.debug("CSW custom mappings: {}".format(dia_values))
 
         return package_dict
 
@@ -178,6 +190,10 @@ def _filter_rights(dia_values):
     return candidates[0]['use_limitation']
 
 
+def _filter_format(format_str):
+    return format_str[2:] if format_str.startwith("*.") else format_str
+
+
 def _get_object_extra(harvest_object, key):
     '''
     Helper function for retrieving the value from a harvest object extra,
@@ -188,4 +204,3 @@ def _get_object_extra(harvest_object, key):
         if extra['key'] == key:
             return extra['value']
     raise KeyError(key)
-
