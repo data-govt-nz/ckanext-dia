@@ -191,9 +191,7 @@ def _filter_rights(dia_values):
 
 
 def _filter_format(format_str):
-    if format_str.startswith("*."):
-        format_str = format_str[2:]
-    return format_str
+    return format_str[2:] if format_str.startwith("*.") else format_str
 
 
 def _get_object_extra(harvest_object, key):
@@ -206,4 +204,3 @@ def _get_object_extra(harvest_object, key):
         if extra['key'] == key:
             return extra['value']
     raise KeyError(key)
-
