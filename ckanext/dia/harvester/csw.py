@@ -1,6 +1,8 @@
+import json
 import pycountry
 from logging import getLogger
 
+from ckan import model
 import ckan.plugins as plugins
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
@@ -178,6 +180,27 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         log.debug("CSW package_dict: {}".format(package_dict))
         log.debug("CSW custom mappings: {}".format(dia_values))
 
+        # Adding default tags and groups from the source config
+        conf = json.loads(data_dict['harvest_object'].source.config)
+
+        tags = package_dict.get('tags', [])
+        tags.extend(conf.get('default_tags', []))
+        package_dict['tags'] = dict((tag['name'], tag) for tag in tags).values()
+
+        # Adding default_groups from config. This was previously not supported
+        # by ckanext-spatial.
+        context = {'model': model, 'user': plugins.toolkit.c.user}
+        groups = []
+        for group_name_or_id in conf.get('default_groups', []):
+            try:
+                group = plugins.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
+                groups.append({'id': group['id'], 'name': group['name']})
+            except plugins.toolkit.ObjectNotFound, e:
+                logging.error('Default group %s not found, proceeding without.' % group_name_or_id)
+                pass
+
+        package_dict['groups'] =  dict((group['id'], group) for group in groups).values()
+
         return package_dict
 
 
@@ -191,7 +214,7 @@ def _filter_rights(dia_values):
 
 
 def _filter_format(format_str):
-    return format_str[2:] if format_str.startwith("*.") else format_str
+    return format_str[2:] if format_str.startswith("*.") else format_str
 
 
 def _get_object_extra(harvest_object, key):
