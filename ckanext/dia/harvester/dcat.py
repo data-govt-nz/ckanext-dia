@@ -85,7 +85,11 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         return package_dict, dcat_dict
 
     def modify_package_dict(self, package_dict, dcat_dict, harvest_object):
-        conf = json.loads(harvest_object.source.config)
+        try:
+            conf = json.loads(harvest_object.source.config)
+        except ValueError:
+            # Failed to decode a JSON object
+            conf = {}
 
         tags = package_dict.get('tags', [])
         tags.extend(conf.get('default_tags', []))
@@ -100,7 +104,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                 group = plugins.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
                 groups.append({'id': group['id'], 'name': group['name']})
             except plugins.toolkit.ObjectNotFound, e:
-                logging.error('Default group %s not found, proceeding without.' % group_name_or_id)
+                log.error('Default group %s not found, proceeding without.' % group_name_or_id)
                 pass
 
         package_dict['groups'] = dict((group['name'], group) for group in groups).values()
