@@ -41,3 +41,19 @@ class DIAActionsPlugin(plugins.SingletonPlugin):
 
     def get_actions(self):
         return {'package_show': get.package_show}
+
+
+class DIANoHomepagePlugin(plugins.SingletonPlugin):
+    plugins.implements(plugins.IRoutes, inherit=True)
+
+    def before_map(self, m):
+        """
+        Redirect / to /dataset
+
+        Homepage \for catalog will be handled on CWP/Silverstrip site
+        """
+        # This would be better as plugins.toolkit.url_for(..) but for some reason
+        # url_for(controller='package', action='search') return /user/edit/
+        # Possibly something todo with import order?
+        m.redirect('/', '/dataset')
+        return m
