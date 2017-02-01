@@ -28,5 +28,6 @@ setup(
     diaactions=ckanext.dia.plugin:DIAActionsPlugin
     diaharvester=ckanext.dia.harvester.csw:DIASpatialHarvester
     diadcatjsonharvester=ckanext.dia.harvester.dcat:DIADCATJSONHarvester
+    dianohomepage=ckanext.dia.plugin:DIANoHomepagePlugin
     """,
 )
