@@ -50,7 +50,7 @@ class DIANoHomepagePlugin(plugins.SingletonPlugin):
         """
         Redirect / to /dataset
 
-        Homepage \for catalog will be handled on CWP/Silverstrip site
+        Homepage for catalog will be handled on CWP/Silverstrip site
         """
         # This would be better as plugins.toolkit.url_for(..) but for some reason
         # url_for(controller='package', action='search') return /user/edit/
