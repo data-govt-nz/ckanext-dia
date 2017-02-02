@@ -3,6 +3,9 @@ import datetime
 from ckan.common import _
 from ckan.lib import helpers as helpers
 from ckan.lib.navl.dictization_functions import Invalid
+import ckan.plugins as p
+
+natural_number_validator = p.toolkit.get_validator('natural_number_validator')
 
 
 def natural_num_or_missing(value, context):
