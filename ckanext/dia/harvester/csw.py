@@ -181,7 +181,10 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         log.debug("CSW custom mappings: {}".format(dia_values))
 
         # Adding default tags and groups from the source config
-        conf = json.loads(data_dict['harvest_object'].source.config)
+        try:
+            conf = json.loads(data_dict['harvest_object'].source.config)
+        except ValueError:
+            conf = {}
 
         tags = package_dict.get('tags', [])
         tags.extend(conf.get('default_tags', []))
