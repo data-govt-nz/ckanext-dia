@@ -184,6 +184,8 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         try:
             conf = json.loads(data_dict['harvest_object'].source.config)
         except ValueError:
+            # Failed to decode a JSON object
+            log.info("Failed to decode source config, using defaults")
             conf = {}
 
         tags = package_dict.get('tags', [])

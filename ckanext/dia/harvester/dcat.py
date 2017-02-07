@@ -89,6 +89,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             conf = json.loads(harvest_object.source.config)
         except ValueError:
             # Failed to decode a JSON object
+            log.info("Failed to decode source config, using defaults")
             conf = {}
 
         tags = package_dict.get('tags', [])
