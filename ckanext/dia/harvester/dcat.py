@@ -31,24 +31,42 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax
         ).strip()
 
-    def _normalize_licence(self, licence):
-        """
-        Noone can agree on the spelling of license in their description, so we have to normalize
-        """
-        return licence.lower().replace('licence', 'license')
+    '''
+    License meta data is often inconsistent, this funtion attempts to match known
+    license meta data with a list of known Creative Commons URLs and Titles.
+    We may update this function over time to help cater for poor quality meta data
+    (we should also talk to the agency to get them to improve the quality of their metadata too).
 
+    Should check for:
+        CC url returns a 200 response and the reponse URL matches the harvested license property
+        CC title in/is harvested license title
+        CC title in/is harvested license description
+        CC url in/is harvested license description
+        CC url is the harvested license link
+    '''
     def _fetch_license_id(self, license_url):
         licenses = license_list({'model': model}, {})
+        resp = requests.get(license_url)
+        #dealing with direct CC url don't call for a json response
         try:
-            resp = requests.get(license_url)
-            resp.raise_for_status()
+            if "https://creativecommons.org" in license_url:
+                for license in licenses:
+                    if license['url'] == resp.url and resp.status_code == 200:
+                        log.debug("Using license {}".format(license['id']))
+                        return license['id']
+        except Exception as e:
+            log.exception("Not a direct CC license URL")
+
+        #not a CC url, call out for json response and check for known variations
+        try:
             license_data = resp.json()
-            for lics in licenses:  # 'license' is a global. TIL
-                if self._normalize_licence(lics['title']) == self._normalize_licence(license_data.get('title', '')) or \
-                   self._normalize_licence(lics['title']) == self._normalize_licence(license_data.get('description', '')) or \
-                   lics['url'] == license_data.get('link', ''):
-                    log.debug("Using license {}".format(lics['id']))
-                    return lics['id']
+            for license in licenses:
+                if license['title'] in license_data.get('title', '') or \
+                    license['title'] in license_data.get('description', '') or \
+                    license['url'] in license_data.get('description', '') or \
+                    license['url'] == license_data.get('link', ''):
+                        log.debug("Using license {}".format(license['id']))
+                        return license['id']
         except Exception as e:
             log.exception("Failed to retrieve license data")
             return None
