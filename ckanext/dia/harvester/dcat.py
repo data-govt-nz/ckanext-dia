@@ -45,13 +45,16 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         CC url is the harvested license link
     '''
     def _fetch_license_id(self, license_url):
-        
         # if a license is not provided we need to return this as other ie. copyright
         if license_url == "":
             return "other"
 
         licenses = license_list({'model': model}, {})
-        resp = requests.get(license_url)
+        try:
+            resp = requests.get(license_url)
+        except Exception as e:
+            log.exception("Failed to get on license url: {}".format(license_url))
+            return None
         #dealing with direct CC url don't call for a json response
         try:
             if "https://creativecommons.org" in license_url:
