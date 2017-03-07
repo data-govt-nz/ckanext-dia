@@ -89,7 +89,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             'maintainer': lambda x: x['contactPoint']['fn'],
             'maintainer_email': lambda x: self._clean_email(x['contactPoint']['hasEmail']),
             'maintainer_phone': lambda x: x['contactPoint']['hasTelephone'],
-            'theme': lambda x: x['theme'][0],
+            'theme': lambda x: x['theme'],
             'rights': lambda x: x['rights'],  # Not tested
             'frequency_of_update': lambda x: x['accrualPeriodicity'],  # Not tested
             'spatial': lambda x: self._clean_spatial(x['spatial']),
