@@ -18,6 +18,32 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
     {"type": "Polygon", "coordinates": [[[$xmin, $ymin], [$xmax, $ymin], [$xmax, $ymax], [$xmin, $ymax], [$xmin, $ymin]]]}
     ''')
 
+    iso_8601_frequency = {"R/P1Y": "Annual",
+                          "R/P2Y": "Biennial",
+                          "R/P2M": "Bimonthly",
+                          "R/P0.5M": "Bimonthly",
+                          "R/P0.5W": "Biweekly",
+                          "R/P2W": "Biweekly",
+                          "R/PT1S": "Continuously updated",
+                          "R/P1D": "Daily",
+                          "R/P10Y": "Decennial",
+                          "R/PT1H": "Hourly",
+                          "R/P1M": "Monthly",
+                          "R/P4Y": "Quadrennial",
+                          "R/P3M": "Quarterly",
+                          "R/P6M": "Semiannual",
+                          "R/P0.5M": "Semimonthly",
+                          "R/P3.5D": "Semiweekly",
+                          "R/P0.33M": "Three times a month",
+                          "R/P0.33W": "Three times a week",
+                          "R/P4M": "Three times a year",
+                          "R/P3Y": "Triennial",
+                          "R/P1W": "Weekly"}
+
+    non_iso_8601_to_iso_8601_frequency = { "Realtime": "Irregular",
+                                           "Yearly": "Annual",
+                                           "As Require": "Irregular"}
+
     def _clean_email(self, email):
         if email.startswith("mailto:"):
             email = email[7:]
@@ -79,6 +105,30 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             log.exception("Failed to retrieve license data")
             return None
 
+    """
+    Frequency (accrualPeriodicity) must match the ISO 8601 term.
+
+    In the database the frequency stored should the the ISO-8601 English
+    equvivalent. The following cleaning is done:
+      - If the frequency is already the English equivalent it is returned.
+      - ISO-8601 terms are mapped to the English equivalent.
+      - Some other obvious mappings are also mapped to the ISO-8601 terms.
+      - All other things are set to Irregular and and logged.
+    """
+    def _clean_frequency(self, frequency):
+        log.debug("_clean_frequency: {0}".format(frequency))
+        if frequency in self.iso_8601_frequency.values():
+            return frequency
+        if frequency in self.iso_8601_frequency:
+            return self.iso_8601_frequency[frequency]
+        if frequency in self.non_iso_8601_to_iso_8601_frequency:
+            log.info("Harvested frequency of {0} mapped to {1}:".format(frequency,
+                                                                        self.non_iso_8601_to_iso_8601_frequency))
+            return self.non_iso_8601_to_iso_8601_frequency[frequencyy]
+        else:
+            log.warning("frequency_of_update found in dcat harvesting is an unknown value: {0}".format(frequency))
+        return 'Irregular'
+
     def _get_package_dict(self, harvest_object):
         package_dict, dcat_dict = super(DIADCATJSONHarvester, self)._get_package_dict(harvest_object)
 
@@ -91,7 +141,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             'maintainer_phone': lambda x: x['contactPoint']['hasTelephone'],
             'theme': lambda x: x['theme'],
             'rights': lambda x: x['rights'],  # Not tested
-            'frequency_of_update': lambda x: x['accrualPeriodicity'],  # Not tested
+            'frequency_of_update': lambda x: self._clean_frequency(x['accrualPeriodicity']),
             'spatial': lambda x: self._clean_spatial(x['spatial']),
             'language': lambda x: x['language'],
             'source_identifier': lambda x: x['identifier'],
