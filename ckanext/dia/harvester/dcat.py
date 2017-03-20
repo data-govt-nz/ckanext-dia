@@ -45,7 +45,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         "Annually": "Annual",
         "As Required": "Irregular",
         "Other-Unknown": "Irregular",
-        "Realtime": "Irregular",
+        "Realtime": "Continuously updated",
         "Static": "Irregular",
         "Unknown": "Irregular",
         "Yearly": "Annual",
