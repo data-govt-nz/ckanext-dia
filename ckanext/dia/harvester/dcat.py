@@ -40,9 +40,16 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                           "R/P3Y": "Triennial",
                           "R/P1W": "Weekly"}
 
-    non_iso_8601_to_iso_8601_frequency = { "Realtime": "Irregular",
-                                           "Yearly": "Annual",
-                                           "As Required": "Irregular"}
+    non_iso_8601_to_iso_8601_frequency = {
+        "6-Monthly": "Semiannual",
+        "Annually": "Annual",
+        "As Required": "Irregular",
+        "Other-Unknown": "Irregular",
+        "Realtime": "Irregular",
+        "Static": "Irregular",
+        "Unknown": "Irregular",
+        "Yearly": "Annual",
+    }
 
     def _clean_email(self, email):
         if email.startswith("mailto:"):
@@ -123,8 +130,8 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             return self.iso_8601_frequency[frequency]
         if frequency in self.non_iso_8601_to_iso_8601_frequency:
             log.info("Harvested frequency of {0} mapped to {1}:".format(frequency,
-                                                                        self.non_iso_8601_to_iso_8601_frequency))
-            return self.non_iso_8601_to_iso_8601_frequency[frequencyy]
+                                                                        self.non_iso_8601_to_iso_8601_frequency[frequency]))
+            return self.non_iso_8601_to_iso_8601_frequency[frequency]
         else:
             log.warning("frequency_of_update found in dcat harvesting is an unknown value: {0}".format(frequency))
         return 'Irregular'
