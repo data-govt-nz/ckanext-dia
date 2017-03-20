@@ -105,17 +105,17 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             log.exception("Failed to retrieve license data")
             return None
 
-    """
-    Frequency (accrualPeriodicity) must match the ISO 8601 term.
-
-    In the database the frequency stored should the the ISO-8601 English
-    equvivalent. The following cleaning is done:
-      - If the frequency is already the English equivalent it is returned.
-      - ISO-8601 terms are mapped to the English equivalent.
-      - Some other obvious mappings are also mapped to the ISO-8601 terms.
-      - All other things are set to Irregular and and logged.
-    """
     def _clean_frequency(self, frequency):
+        """
+        Frequency (accrualPeriodicity) must match the ISO 8601 term.
+
+        In the database the frequency stored should the the ISO-8601 English
+        equvivalent. The following cleaning is done:
+        - If the frequency is already the English equivalent it is returned.
+        - ISO-8601 terms are mapped to the English equivalent.
+        - Some other obvious mappings are also mapped to the ISO-8601 terms.
+        - All other things are set to Irregular and and logged.
+        """
         log.debug("_clean_frequency: {0}".format(frequency))
         if frequency in self.iso_8601_frequency.values():
             return frequency
