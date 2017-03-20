@@ -42,7 +42,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
 
     non_iso_8601_to_iso_8601_frequency = { "Realtime": "Irregular",
                                            "Yearly": "Annual",
-                                           "As Require": "Irregular"}
+                                           "As Required": "Irregular"}
 
     def _clean_email(self, email):
         if email.startswith("mailto:"):
