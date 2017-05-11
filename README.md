@@ -8,7 +8,7 @@ of Internal Affairs).
 You can use `pip` to install this plugin into your virtual environment:
 
 ```
-pip install -e 'git+ssh@gitlab.wgtn.cat-it.co.nz/ckan/ckanext-dia.git#egg=ckanext-dia==0.0.1'
+pip install -e 'https://github.com/data-govt-nz/ckanext-dia.git#egg=ckanext-dia==0.0.1'
 ```
 
 ## How to activate plugins?
