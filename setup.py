@@ -29,5 +29,8 @@ setup(
     diaharvester=ckanext.dia.harvester.csw:DIASpatialHarvester
     diadcatjsonharvester=ckanext.dia.harvester.dcat:DIADCATJSONHarvester
     dianohomepage=ckanext.dia.plugin:DIANoHomepagePlugin
+
+    [paste.paster_command]
+    admin=ckanext.dia.commands:AdminCommand
     """,
 )
