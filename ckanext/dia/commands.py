@@ -7,13 +7,15 @@ import ckan.model as model
 
 class AdminCommand(ckan.lib.cli.CkanCommand):
     '''Command for datastore cleanup
-    Usage:
-        # General usage
-        paster --plugin=ckanext-dia <command> -c <path to config file>
-        # Show this help
-        paster admin help
-        # Cleanup datastore
-        paster admin cleanup_datastore
+    Usage: paster --plugin=ckanext-dia admin <command> -c <path to config file>
+
+        command:
+        help  - prints this help
+        cleanup_datastore -    Cleans datastore by deleting datastore resource tables
+                               that are no longer referenced by datasets
+
+    This command originally came from ckanext-switzerland
+                https://github.com/opendata-swiss/ckanext-switzerland/
     '''
     summary = __doc__.split('\n')[0]
     usage = __doc__
