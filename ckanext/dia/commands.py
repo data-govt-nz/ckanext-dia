@@ -1,8 +1,11 @@
 import sys
+import logging
 import itertools
 import ckan.lib.cli
 import ckan.logic as logic
 import ckan.model as model
+
+logger = logging.getLogger('ckan.logic')
 
 
 class AdminCommand(ckan.lib.cli.CkanCommand):
@@ -63,15 +66,23 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
 
         # delete the rows of the orphaned datastore tables
         delete_count = 0
+        delete_error_count = 0
         for resource_id in resource_id_list:
-            logic.get_action('datastore_delete')(
-                context,
-                {'resource_id': resource_id, 'force': True}
-            )
-            print "Table '%s' deleted (not dropped)" % resource_id
-            delete_count += 1
+            try:
+                logic.get_action('datastore_delete')(
+                    context,
+                    {'resource_id': resource_id, 'force': True}
+                )
+                print "Table '%s' deleted (not dropped)" % resource_id
+                delete_count += 1
+            except AttributeError as e:
+                print("Issue with dropping resource {}".format(resource_id))
+                delete_error_count += 1
+                logger.exception("Unable to drop resource: '%s'",
+                                 resource_id, exc_info=e)
 
         print "Deleted content of %s tables" % delete_count
+        print "Deletion failed for %s tables" % delete_error_count
 
     def _get_datastore_table_page(self, context, offset=0):
         # query datastore to get all resources from the _table_metadata
@@ -100,6 +111,13 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
                 print "Resource '%s' *not* found" % record['name']
             except KeyError:
                 continue
+            except Exception as e:
+                # Added as something did not check the authorization for
+                # doing a resource_show.
+                print("Unexpected error looking up resource: '%s'",
+                      record['name'])
+                logger.exception("Unable to lookup resource: '%s'",
+                                 record['name'], exc_info=e)
 
         # are there more records?
         has_next_page = (len(result['records']) > 0)
