@@ -33,4 +33,12 @@ are no longer referenced.
 paster --plugin=ckanext-dia admin cleanup_datastore -c /PATH_TO_YOUR_INI_FILE/dev.ini
 ```
 
+Note: That if you default_datastore is very large this may time out and need
+to be restarted.  Also although it deletes the resource's tables form the
+datastore_default it does not delete entries from archival, resource,
+resource_revision and resource_view.
+It also failed on the first run to delete some resources but they were deleted on subsequent runs.
+
+
+
 Thanks @opendata-swiss who wrote the command at https://github.com/opendata-swiss/ckanext-switzerland
