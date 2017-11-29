@@ -63,6 +63,11 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
             resource_id_list.extend(record_list)
             if not has_next_page:
                 break
+            if len(resource_id_list) > 250:
+                # Run a small chunk of the dataset to avoid locking up the
+                # database for a *really* long time(read: until postgres is
+                # restarted)
+                break
 
         # delete the rows of the orphaned datastore tables
         delete_count = 0
@@ -114,7 +119,7 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
             except Exception as e:
                 # Added as something did not check the authorization for
                 # doing a resource_show.
-                print("Unexpected error looking up resource: '%s'",
+                print "Unexpected error looking up resource: '%s'" % (
                       record['name'])
                 logger.exception("Unable to lookup resource: '%s'",
                                  record['name'], exc_info=e)
