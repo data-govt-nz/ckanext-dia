@@ -91,6 +91,7 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
 
     def _get_datastore_table_page(self, context, offset=0):
         # query datastore to get all resources from the _table_metadata
+        context['_timeout'] = 20 * 60 * 1000
         result = logic.get_action('datastore_search')(
             context,
             {
