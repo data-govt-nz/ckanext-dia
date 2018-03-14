@@ -42,6 +42,11 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
         print self.__doc__
 
     def cleanup_datastore(self):
+        for i in xrange(20):
+            print 'invoking iteration %s of the cleanup_datastore_once function' % i
+            self.cleanup_datastore_once()
+
+    def cleanup_datastore_once(self):
         user = logic.get_action('get_site_user')({'ignore_auth': True}, {})
         context = {
             'model': model,
