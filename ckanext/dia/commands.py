@@ -44,7 +44,10 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
     def cleanup_datastore(self):
         for i in xrange(20):
             print 'invoking iteration %s of the cleanup_datastore_once function' % i
-            self.cleanup_datastore_once()
+            deletes, errors = self.cleanup_datastore_once()
+            if deletes == 0:
+                print 'no datastore tables remain to be deleted.'
+                break
 
     def cleanup_datastore_once(self):
         user = logic.get_action('get_site_user')({'ignore_auth': True}, {})
@@ -93,6 +96,7 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
 
         print "Deleted content of %s tables" % delete_count
         print "Deletion failed for %s tables" % delete_error_count
+        return (delete_count, delete_error_count)
 
     def _get_datastore_table_page(self, context, offset=0):
         # query datastore to get all resources from the _table_metadata
