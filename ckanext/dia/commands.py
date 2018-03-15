@@ -42,6 +42,17 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
         print self.__doc__
 
     def cleanup_datastore(self):
+        # E.B 15/3/18 HACK: running the datastore 20 times in a row allows us to 
+        # get datastore table cleanup to work. Without this hack only 300 tables 
+        # will be cleaned up.
+        for i in xrange(20):
+            print 'invoking iteration %s of the cleanup_datastore_once function' % i
+            deletes, errors = self.cleanup_datastore_once()
+            if deletes == 0:
+                print 'no datastore tables remain to be deleted.'
+                break
+
+    def cleanup_datastore_once(self):
         user = logic.get_action('get_site_user')({'ignore_auth': True}, {})
         context = {
             'model': model,
@@ -88,6 +99,7 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
 
         print "Deleted content of %s tables" % delete_count
         print "Deletion failed for %s tables" % delete_error_count
+        return (delete_count, delete_error_count)
 
     def _get_datastore_table_page(self, context, offset=0):
         # query datastore to get all resources from the _table_metadata
