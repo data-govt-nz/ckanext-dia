@@ -42,6 +42,9 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
         print self.__doc__
 
     def cleanup_datastore(self):
+        # E.B 15/3/18 HACK: running the datastore 20 times in a row allows us to 
+        # get datastore table cleanup to work. Without this hack only 300 tables 
+        # will be cleaned up.
         for i in xrange(20):
             print 'invoking iteration %s of the cleanup_datastore_once function' % i
             deletes, errors = self.cleanup_datastore_once()
