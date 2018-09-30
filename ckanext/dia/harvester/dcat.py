@@ -153,7 +153,8 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             'language': lambda x: x['language'],
             'source_identifier': lambda x: x['identifier'],
             'license_url': lambda x: x['license'],
-            'license_id': lambda x: self._fetch_license_id(x['license'])
+            'license_id': lambda x: self._fetch_license_id(x['license']),
+            'temporal': lambda x: x['temporal']
         }
 
         for k, v in mappings.items():
@@ -192,4 +193,6 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                 pass
 
         package_dict['groups'] = dict((group['name'], group) for group in groups).values()
+        from pprint import pformat
+        log.debug('HERE IS THE DICT {}'.format(pformat(package_dict)))
         return package_dict
