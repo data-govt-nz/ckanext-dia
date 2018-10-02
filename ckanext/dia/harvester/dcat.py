@@ -153,7 +153,8 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             'language': lambda x: x['language'],
             'source_identifier': lambda x: x['identifier'],
             'license_url': lambda x: x['license'],
-            'license_id': lambda x: self._fetch_license_id(x['license'])
+            'license_id': lambda x: self._fetch_license_id(x['license']),
+            'temporal': lambda x: x['temporal']
         }
 
         for k, v in mappings.items():
