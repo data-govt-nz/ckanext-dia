@@ -193,6 +193,4 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                 pass
 
         package_dict['groups'] = dict((group['name'], group) for group in groups).values()
-        from pprint import pformat
-        log.debug('HERE IS THE DICT {}'.format(pformat(package_dict)))
         return package_dict
