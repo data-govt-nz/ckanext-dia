@@ -198,4 +198,9 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                 pass
 
         package_dict['groups'] = dict((group['name'], group) for group in groups).values()
+
+        if package_dict.get('theme', None) and isinstance(package_dict.get('theme'), list):
+            package_dict['theme'] = json.dumps(package_dict.get('theme'))
+
+
         return package_dict
