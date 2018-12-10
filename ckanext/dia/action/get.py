@@ -14,6 +14,8 @@ from ckan.logic.action.get import _add_tracking_summary_to_resource_dict
 
 from ckan.common import _
 
+from ckantoolkit import side_effect_free
+
 log = logging.getLogger('ckan.logic')
 
 # Define some shortcuts
@@ -24,6 +26,7 @@ _get_or_bust = logic.get_or_bust
 _or_ = sqlalchemy.or_
 
 
+@side_effect_free
 def package_show(context, data_dict):
     """Return the metadata of a dataset (package) and its resources.
 
