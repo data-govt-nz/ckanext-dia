@@ -188,7 +188,17 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         log.error(harvest_object.source.config)
 
         context = {'model': model, 'user': plugins.toolkit.c.user}
+
         groups = []
+
+    # DATA-519: Get existing groups from the package before appending default groups
+        try:
+            query = {'id': package_dict.get('name', None)}
+            original_package = plugins.toolkit.get_action('package_show')(context, query)
+            groups = original_package['groups']
+        except plugins.toolkit.ObjectNotFound:
+            pass
+
         for group_name_or_id in conf.get('default_groups', []):
             try:
                 group = plugins.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
