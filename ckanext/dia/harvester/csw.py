@@ -173,8 +173,6 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
             data_format = dia_values['data-format']
             if len(data_format) != 0:
-                from pprint import pformat
-                log.debug('HACKHACKHACK around resrouce issue {}'.format(pformat(resource)))
                 resource['format'] = _filter_format(data_format[0]['name'])
 
         try:
@@ -213,7 +211,6 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         package_dict['groups'] =  dict((group['id'], group) for group in groups).values()
 
         # CSW records can have a non wgs-84 projection, we will need to convert the geojson to wgs-84
-        from pdb import set_trace
         for extra in package_dict['extras']:
             if extra['key'] == 'spatial-reference-system':
                 spatial_srid = extra['value']
@@ -227,11 +224,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             from pyproj import Proj, transform
 
             outProj = Proj('+init=EPSG:4326')
-            try:
-                inProj = Proj('+init=EPSG:' + spatial_srid)
-            except:
-                set_trace()
-
+            inProj = Proj('+init=EPSG:' + spatial_srid)
 
             if spatial_geojson['type'] == 'Polygon':
                 new_linestrings = []
@@ -248,10 +241,9 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
                 x,y = spatial_geojson['coordinates']
                 nx, ny = transform(inProj, outProj, x, y)
                 spatial_geojson['coordinates'] = [nx, ny]
-
             else:
-                log.warn('DO NOT UNDERSTAND HOW TO HANDLE THIS TYPE OF SHAPE')
-                set_trace()
+                msg = 'The DIA CSW harvest does not understand how to re-project a {} type of geojson'
+                log.warn(msg.format(spatial_geojson['spatial']))
 
             # create updated version of extras array with correct SRID + spatial field
             new_extras = []
