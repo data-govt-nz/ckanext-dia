@@ -118,7 +118,9 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         if 'jurisdiction' in dia_values:
             try:
-                dia_values['jurisdiction'] = pycountry.countries.get(alpha_3=dia_values['jurisdiction'].upper()).name
+                country = pycountry.countries.get(alpha_3=dia_values['jurisdiction'].upper())
+                if country:
+                    dia_values['jurisdiction'] = country.name
             except KeyError:
                 pass
 
@@ -133,7 +135,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         for k, v in dia_mappings.items():
             try:
                 package_dict[k] = v(dia_values)
-            except KeyError, IndexError:
+            except (KeyError, IndexError):
                 pass
 
         package_issued = iso_values['date-released']
@@ -154,7 +156,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         for k, v in iso_mappings.items():
             try:
                 package_dict[k] = v(iso_values)
-            except KeyError, IndexError:
+            except (KeyError, IndexError):
                 pass
 
         # Override resource name, set it to package title if unset
@@ -169,7 +171,11 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             resource['resource_created'] = package_issued
             resource['last_modified'] = package_modified
 
-            resource['format'] = _filter_format(dia_values['data-format'][0]['name'])
+            data_format = dia_values['data-format']
+            if len(data_format) != 0:
+                from pprint import pformat
+                log.debug('HACKHACKHACK around resrouce issue {}'.format(pformat(resource)))
+                resource['format'] = _filter_format(data_format[0]['name'])
 
         try:
             package_dict['frequency_of_update'] = _get_object_extra(package_dict, 'frequency-of-update')
@@ -205,6 +211,60 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
                 pass
 
         package_dict['groups'] =  dict((group['id'], group) for group in groups).values()
+
+        # CSW records can have a non wgs-84 projection, we will need to convert the geojson to wgs-84
+        from pdb import set_trace
+        for extra in package_dict['extras']:
+            if extra['key'] == 'spatial-reference-system':
+                spatial_srid = extra['value']
+            if extra['key'] == 'spatial':
+                try:
+                    spatial_geojson = json.loads(extra['value'])
+                except ValueError:
+                    log.warn('Failed to parse json for spatial field of package {}'.format(package_dict))
+
+        if not not spatial_srid and spatial_geojson is not None:
+            from pyproj import Proj, transform
+
+            outProj = Proj('+init=EPSG:4326')
+            try:
+                inProj = Proj('+init=EPSG:' + spatial_srid)
+            except:
+                set_trace()
+
+
+            if spatial_geojson['type'] == 'Polygon':
+                new_linestrings = []
+                for linestring in spatial_geojson['coordinates']:
+                    new_linestring = []
+                    for x,y in linestring:
+                        nx, ny = transform(inProj, outProj, x, y)
+                        new_linestring.append([nx, ny])
+                    new_linestrings.append(new_linestring)
+                spatial_geojson['coordinates'] = new_linestrings
+
+            elif spatial_geojson['type'] == 'Point':
+                # {"type": "Point", "coordinates": [2145000.0, 5467000.0]}'}
+                x,y = spatial_geojson['coordinates']
+                nx, ny = transform(inProj, outProj, x, y)
+                spatial_geojson['coordinates'] = [nx, ny]
+
+            else:
+                log.warn('DO NOT UNDERSTAND HOW TO HANDLE THIS TYPE OF SHAPE')
+                set_trace()
+
+            # create updated version of extras array with correct SRID + spatial field
+            new_extras = []
+            for extra in package_dict['extras']:
+                if extra['key'] == 'spatial':
+                    new_extras.append({'key': 'spatial', 'value': json.dumps(spatial_geojson)})
+                elif extra['key'] == 'spatial-reference-system':
+                    new_extras.append({'key': 'spatial-reference-system', 'value': '4326'})
+                else:
+                    new_extras.append(extra)
+            package_dict['extras'] = new_extras
+        else:
+            log.warning('Could not determine SRID or spatial field for package {}'.format(package_dict))
 
         return package_dict
 
