@@ -226,7 +226,20 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             outProj = Proj('+init=EPSG:4326')
             inProj = Proj('+init=EPSG:' + spatial_srid)
 
-            if spatial_geojson['type'] == 'Polygon':
+            if spatial_geojson['type'] == 'MultiPolygon':
+                new_polygons = []
+                for polygon in spatial_geojson['coordinates']:
+                    new_linestrings = []
+                    for linestring in polygon:
+                        new_linestring = []
+                        for x,y in linestring:
+                            nx, ny = transform(inProj, outProj, x, y)
+                            new_linestring.append([nx, ny])
+                        new_linestrings.append(new_linestring)
+                    new_polygons.append(new_linestrings)
+                spatial_geojson['coordinates'] = new_polygons
+
+            elif spatial_geojson['type'] == 'Polygon':
                 new_linestrings = []
                 for linestring in spatial_geojson['coordinates']:
                     new_linestring = []
