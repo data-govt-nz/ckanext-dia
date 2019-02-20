@@ -1,11 +1,13 @@
 import json
 import pycountry
+import re
 from logging import getLogger
 
 from ckan import model
 import ckan.plugins as plugins
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
+from ckan.logic.action.get import license_list
 
 log = getLogger(__name__)
 
@@ -129,6 +131,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             'jurisdiction': lambda x: x['jurisdiction'],
             'maintainer_phone': lambda x: x['metadata-point-of-contact'][0]['contact-info']['phone'],
             'rights': _filter_rights,
+            'license_id': _get_license,
             'format': lambda x: _filter_format(x['data-format'][0]['name'])
         }
 
@@ -281,6 +284,29 @@ def _filter_rights(dia_values):
     # if we can't find the value we want
     candidates = [x for x in dia_values['rights'] if x['use_constraints'] in ('copyright', 'intellectualPropertyRights')]
     return candidates[0]['use_limitation']
+
+# Attempt to get license id from paragraph of license info provided
+def _get_license(dia_values):
+    licenses = license_list({'model': model}, {})
+    url_to_id = {}
+    for license in licenses:
+        url_to_id[license['url']] = license['id']
+
+    url_regex_to_id = {}
+    for url, id in url_to_id.iteritems():
+        # all urls are https and end with a trailing slash
+        # what we are matching might not be
+        escaped_url = re.escape(url.replace('https', '').strip('/'))
+        url_regex = '(http|https){}/*'.format(escaped_url)
+        url_regex_to_id[url_regex] = id
+
+    candidates = [x for x in dia_values['rights'] if x['use_constraints'] == 'license']
+    for candidate in candidates:
+        for url in url_regex_to_id:
+            if re.search(url, candidate['use_limitation']):
+                return url_regex_to_id[url]
+    return 'other'
+
 
 
 def _filter_format(format_str):
