@@ -223,7 +223,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
                 except ValueError:
                     log.warn('Failed to parse json for spatial field of package {}'.format(package_dict))
 
-        if not not spatial_srid and spatial_geojson is not None:
+        if spatial_srid and spatial_geojson is not None:
             from pyproj import Proj, transform
 
             outProj = Proj('+init=EPSG:4326')
