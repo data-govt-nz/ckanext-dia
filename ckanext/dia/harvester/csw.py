@@ -54,6 +54,17 @@ class DIARights(ISOElement):
     ]
 
 
+class ISOCornerPoints(ISOElement):
+    elements = [
+        ISOElement(
+            name="pos",
+            search_paths=[
+                "gml:Point/gml:pos/text()"
+            ],
+            multiplicity="*",
+        )
+    ]
+
 class DIADocument(MappedXmlDocument):
 
     elements = [
@@ -98,6 +109,13 @@ class DIADocument(MappedXmlDocument):
                 "gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceFormat/gmd:MD_Format"
             ],
             multiplicity="*",
+        ),
+        ISOCornerPoints(
+            name="corner-points",
+            search_paths=[
+                "/gmd:MD_Metadata/gmd:spatialRepresentationInfo/gmd:MD_Georectified/gmd:cornerPoints"
+            ],
+            multiplicity="*"
         )
     ]
 
@@ -106,7 +124,6 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
     plugins.implements(ISpatialHarvester, inherit=True)
 
     def get_package_dict(self, context, data_dict):
-
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
 
@@ -222,44 +239,51 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
                     spatial_geojson = json.loads(extra['value'])
                 except ValueError:
                     log.warn('Failed to parse json for spatial field of package {}'.format(package_dict))
-
+        # Alternative bounding box, when this exists
+        # we can't be sure if the spatial information
+        # is in WGS84 already, or if it requires conversion
+        # so we throw an error and leave it as-is
+        cornerPoints = dia_values.get('corner-points')
         if spatial_srid and spatial_geojson is not None:
-            from pyproj import Proj, transform
+            if cornerPoints:
+                    log.warn('Multiple geometries, with a single SRID. Will not convert Geometry. cornerPoints:  {} spatial_geojson: {} SRID: EPSG:{}'.format(cornerPoints, spatial_geojson, spatial_srid))
+            else:
+                from pyproj import Proj, transform
 
-            outProj = Proj('+init=EPSG:4326')
-            inProj = Proj('+init=EPSG:' + spatial_srid)
+                outProj = Proj('+init=EPSG:4326')
+                inProj = Proj('+init=EPSG:' + spatial_srid)
 
-            if spatial_geojson['type'] == 'MultiPolygon':
-                new_polygons = []
-                for polygon in spatial_geojson['coordinates']:
+                if spatial_geojson['type'] == 'MultiPolygon':
+                    new_polygons = []
+                    for polygon in spatial_geojson['coordinates']:
+                        new_linestrings = []
+                        for linestring in polygon:
+                            new_linestring = []
+                            for x,y in linestring:
+                                nx, ny = transform(inProj, outProj, x, y)
+                                new_linestring.append([nx, ny])
+                            new_linestrings.append(new_linestring)
+                        new_polygons.append(new_linestrings)
+                    spatial_geojson['coordinates'] = new_polygons
+
+                elif spatial_geojson['type'] == 'Polygon':
                     new_linestrings = []
-                    for linestring in polygon:
+                    for linestring in spatial_geojson['coordinates']:
                         new_linestring = []
                         for x,y in linestring:
                             nx, ny = transform(inProj, outProj, x, y)
                             new_linestring.append([nx, ny])
                         new_linestrings.append(new_linestring)
-                    new_polygons.append(new_linestrings)
-                spatial_geojson['coordinates'] = new_polygons
+                    spatial_geojson['coordinates'] = new_linestrings
 
-            elif spatial_geojson['type'] == 'Polygon':
-                new_linestrings = []
-                for linestring in spatial_geojson['coordinates']:
-                    new_linestring = []
-                    for x,y in linestring:
-                        nx, ny = transform(inProj, outProj, x, y)
-                        new_linestring.append([nx, ny])
-                    new_linestrings.append(new_linestring)
-                spatial_geojson['coordinates'] = new_linestrings
-
-            elif spatial_geojson['type'] == 'Point':
-                # {"type": "Point", "coordinates": [2145000.0, 5467000.0]}'}
-                x,y = spatial_geojson['coordinates']
-                nx, ny = transform(inProj, outProj, x, y)
-                spatial_geojson['coordinates'] = [nx, ny]
-            else:
-                msg = 'The DIA CSW harvest does not understand how to re-project a {} type of geojson'
-                log.warn(msg.format(spatial_geojson['spatial']))
+                elif spatial_geojson['type'] == 'Point':
+                    # {"type": "Point", "coordinates": [2145000.0, 5467000.0]}'}
+                    x,y = spatial_geojson['coordinates']
+                    nx, ny = transform(inProj, outProj, x, y)
+                    spatial_geojson['coordinates'] = [nx, ny]
+                else:
+                    msg = 'The DIA CSW harvest does not understand how to re-project a {} type of geojson'
+                    log.warn(msg.format(spatial_geojson['spatial']))
 
             # create updated version of extras array with correct SRID + spatial field
             new_extras = []
