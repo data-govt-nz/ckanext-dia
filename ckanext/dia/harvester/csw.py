@@ -1,11 +1,13 @@
 import json
 import pycountry
+import re
 from logging import getLogger
 
 from ckan import model
 import ckan.plugins as plugins
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
+from ckan.logic.action.get import license_list
 
 log = getLogger(__name__)
 
@@ -52,6 +54,17 @@ class DIARights(ISOElement):
     ]
 
 
+class ISOCornerPoints(ISOElement):
+    elements = [
+        ISOElement(
+            name="pos",
+            search_paths=[
+                "gml:Point/gml:pos/text()"
+            ],
+            multiplicity="*",
+        )
+    ]
+
 class DIADocument(MappedXmlDocument):
 
     elements = [
@@ -96,7 +109,14 @@ class DIADocument(MappedXmlDocument):
                 "gmd:identificationInfo/gmd:MD_DataIdentification/gmd:resourceFormat/gmd:MD_Format"
             ],
             multiplicity="*",
-        )
+        ),
+        ISOCornerPoints(
+            name="corner-points",
+            search_paths=[
+                "/gmd:MD_Metadata/gmd:spatialRepresentationInfo/gmd:MD_Georectified/gmd:cornerPoints"
+            ],
+            multiplicity="*"
+        ),
     ]
 
 
@@ -104,7 +124,6 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
     plugins.implements(ISpatialHarvester, inherit=True)
 
     def get_package_dict(self, context, data_dict):
-
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
 
@@ -118,7 +137,9 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         if 'jurisdiction' in dia_values:
             try:
-                dia_values['jurisdiction'] = pycountry.countries.get(alpha_3=dia_values['jurisdiction'].upper()).name
+                country = pycountry.countries.get(alpha_3=dia_values['jurisdiction'].upper())
+                if country:
+                    dia_values['jurisdiction'] = country.name
             except KeyError:
                 pass
 
@@ -127,17 +148,18 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             'jurisdiction': lambda x: x['jurisdiction'],
             'maintainer_phone': lambda x: x['metadata-point-of-contact'][0]['contact-info']['phone'],
             'rights': _filter_rights,
+            'license_id': _get_license,
             'format': lambda x: _filter_format(x['data-format'][0]['name'])
         }
 
         for k, v in dia_mappings.items():
             try:
                 package_dict[k] = v(dia_values)
-            except KeyError, IndexError:
+            except (KeyError, IndexError):
                 pass
 
-        package_issued = iso_values['date-released']
-        package_modified = iso_values['date-updated']
+        package_issued = iso_values['date-released'] or iso_values['date-created']
+        package_modified = iso_values['date-updated'] or iso_values['metadata-date']
 
         package_dict['issued'] = package_issued
         package_dict['created'] = package_issued
@@ -154,7 +176,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         for k, v in iso_mappings.items():
             try:
                 package_dict[k] = v(iso_values)
-            except KeyError, IndexError:
+            except (KeyError, IndexError):
                 pass
 
         # Override resource name, set it to package title if unset
@@ -169,7 +191,9 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             resource['resource_created'] = package_issued
             resource['last_modified'] = package_modified
 
-            resource['format'] = _filter_format(dia_values['data-format'][0]['name'])
+            data_format = dia_values['data-format']
+            if len(data_format) != 0:
+                resource['format'] = _filter_format(data_format[0]['name'])
 
         try:
             package_dict['frequency_of_update'] = _get_object_extra(package_dict, 'frequency-of-update')
@@ -206,6 +230,74 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         package_dict['groups'] =  dict((group['id'], group) for group in groups).values()
 
+        # CSW records can have a non wgs-84 projection, we will need to convert the geojson to wgs-84
+        for extra in package_dict['extras']:
+            if extra['key'] == 'spatial-reference-system':
+                spatial_srid = extra['value']
+            if extra['key'] == 'spatial':
+                try:
+                    spatial_geojson = json.loads(extra['value'])
+                except ValueError:
+                    log.warn('Failed to parse json for spatial field of package {}'.format(package_dict))
+        # Alternative bounding box, when this exists
+        # we can't be sure if the spatial information
+        # is in WGS84 already, or if it requires conversion
+        # so we throw an error and leave it as-is
+        cornerPoints = dia_values.get('corner-points')
+        if spatial_srid and spatial_geojson is not None:
+            if cornerPoints:
+                    log.warn('Multiple geometries, with a single SRID. Will not convert Geometry. cornerPoints:  {} spatial_geojson: {} SRID: EPSG:{}'.format(cornerPoints, spatial_geojson, spatial_srid))
+            else:
+                from pyproj import Proj, transform
+
+                outProj = Proj('+init=EPSG:4326')
+                inProj = Proj('+init=EPSG:' + spatial_srid)
+
+                if spatial_geojson['type'] == 'MultiPolygon':
+                    new_polygons = []
+                    for polygon in spatial_geojson['coordinates']:
+                        new_linestrings = []
+                        for linestring in polygon:
+                            new_linestring = []
+                            for x,y in linestring:
+                                nx, ny = transform(inProj, outProj, x, y)
+                                new_linestring.append([nx, ny])
+                            new_linestrings.append(new_linestring)
+                        new_polygons.append(new_linestrings)
+                    spatial_geojson['coordinates'] = new_polygons
+
+                elif spatial_geojson['type'] == 'Polygon':
+                    new_linestrings = []
+                    for linestring in spatial_geojson['coordinates']:
+                        new_linestring = []
+                        for x,y in linestring:
+                            nx, ny = transform(inProj, outProj, x, y)
+                            new_linestring.append([nx, ny])
+                        new_linestrings.append(new_linestring)
+                    spatial_geojson['coordinates'] = new_linestrings
+
+                elif spatial_geojson['type'] == 'Point':
+                    # {"type": "Point", "coordinates": [2145000.0, 5467000.0]}'}
+                    x,y = spatial_geojson['coordinates']
+                    nx, ny = transform(inProj, outProj, x, y)
+                    spatial_geojson['coordinates'] = [nx, ny]
+                else:
+                    msg = 'The DIA CSW harvest does not understand how to re-project a {} type of geojson'
+                    log.warn(msg.format(spatial_geojson['spatial']))
+
+            # create updated version of extras array with correct SRID + spatial field
+            new_extras = []
+            for extra in package_dict['extras']:
+                if extra['key'] == 'spatial':
+                    new_extras.append({'key': 'spatial', 'value': json.dumps(spatial_geojson)})
+                elif extra['key'] == 'spatial-reference-system':
+                    new_extras.append({'key': 'spatial-reference-system', 'value': '4326'})
+                else:
+                    new_extras.append(extra)
+            package_dict['extras'] = new_extras
+        else:
+            log.warning('Could not determine SRID or spatial field for package {}'.format(package_dict))
+
         return package_dict
 
 
@@ -216,6 +308,29 @@ def _filter_rights(dia_values):
     # if we can't find the value we want
     candidates = [x for x in dia_values['rights'] if x['use_constraints'] in ('copyright', 'intellectualPropertyRights')]
     return candidates[0]['use_limitation']
+
+# Attempt to get license id from paragraph of license info provided
+def _get_license(dia_values):
+    licenses = license_list({'model': model}, {})
+    url_to_id = {}
+    for license in licenses:
+        url_to_id[license['url']] = license['id']
+
+    url_regex_to_id = {}
+    for url, id in url_to_id.iteritems():
+        # all urls are https and end with a trailing slash
+        # what we are matching might not be
+        escaped_url = re.escape(url.replace('https', '').strip('/'))
+        url_regex = '(http|https){}/*'.format(escaped_url)
+        url_regex_to_id[url_regex] = id
+
+    candidates = [x for x in dia_values['rights'] if x['use_constraints'] == 'license']
+    for candidate in candidates:
+        for url in url_regex_to_id:
+            if re.search(url, candidate['use_limitation']):
+                return url_regex_to_id[url]
+    return 'other'
+
 
 
 def _filter_format(format_str):
