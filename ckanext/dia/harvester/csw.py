@@ -116,7 +116,7 @@ class DIADocument(MappedXmlDocument):
                 "/gmd:MD_Metadata/gmd:spatialRepresentationInfo/gmd:MD_Georectified/gmd:cornerPoints"
             ],
             multiplicity="*"
-        )
+        ),
     ]
 
 
@@ -158,8 +158,8 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             except (KeyError, IndexError):
                 pass
 
-        package_issued = iso_values['date-released']
-        package_modified = iso_values['date-updated']
+        package_issued = iso_values['date-released'] or iso_values['date-created']
+        package_modified = iso_values['date-updated'] or iso_values['metadata-date']
 
         package_dict['issued'] = package_issued
         package_dict['created'] = package_issued
