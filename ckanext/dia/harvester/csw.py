@@ -9,9 +9,9 @@ from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
 from pyproj import Proj, transform
+from clean_frequency import clean_frequency
 
 log = getLogger(__name__)
-
 
 class DIAISOResponsibleParty(ISOElement):
 
@@ -196,10 +196,10 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             if len(data_format) != 0:
                 resource['format'] = _filter_format(data_format[0]['name'])
 
-        try:
-            package_dict['frequency_of_update'] = _get_object_extra(package_dict, 'frequency-of-update')
-        except KeyError:
-            pass
+
+        frequency = _get_object_extra(package_dict, 'frequency-of-update')
+        if frequency:
+            package_dict['frequency_of_update'] = clean_frequency(frequency)
 
         log.debug("CSW iso_values: {}".format(iso_values))
         log.debug("CSW package_dict: {}".format(package_dict))
@@ -352,4 +352,4 @@ def _get_object_extra(harvest_object, key):
     for extra in harvest_object['extras']:
         if extra['key'] == key:
             return extra['value']
-    raise KeyError(key)
+    return None

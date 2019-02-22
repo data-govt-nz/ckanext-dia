@@ -8,6 +8,7 @@ from ckan import model
 import ckan.plugins as plugins
 from ckan.logic.action.get import license_list
 from ckanext.dcat.harvesters import DCATJSONHarvester
+from clean_frequency import clean_frequency
 
 log = getLogger(__name__)
 
@@ -117,29 +118,6 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             log.exception("Failed to retrieve license data")
             return None
 
-    def _clean_frequency(self, frequency):
-        """
-        Frequency (accrualPeriodicity) must match the ISO 8601 term.
-
-        In the database the frequency stored should the the ISO-8601 English
-        equvivalent. The following cleaning is done:
-        - If the frequency is already the English equivalent it is returned.
-        - ISO-8601 terms are mapped to the English equivalent.
-        - Some other obvious mappings are also mapped to the ISO-8601 terms.
-        - All other things are set to Irregular and and logged.
-        """
-        log.debug("_clean_frequency: {0}".format(frequency))
-        if frequency in self.iso_8601_frequency.values():
-            return frequency
-        if frequency in self.iso_8601_frequency:
-            return self.iso_8601_frequency[frequency]
-        if frequency in self.non_iso_8601_to_iso_8601_frequency:
-            log.info("Harvested frequency of {0} mapped to {1}:".format(frequency,
-                                                                        self.non_iso_8601_to_iso_8601_frequency[frequency]))
-            return self.non_iso_8601_to_iso_8601_frequency[frequency]
-        else:
-            log.warning("frequency_of_update found in dcat harvesting is an unknown value: {0}".format(frequency))
-        return 'Irregular'
 
     def _get_package_dict(self, harvest_object):
         package_dict, dcat_dict = super(DIADCATJSONHarvester, self)._get_package_dict(harvest_object)
@@ -153,7 +131,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             'maintainer_phone': lambda x: x['contactPoint']['hasTelephone'],
             'theme': lambda x: x['theme'],
             'rights': lambda x: x['rights'],  # Not tested
-            'frequency_of_update': lambda x: self._clean_frequency(x['accrualPeriodicity']),
+            'frequency_of_update': lambda x: clean_frequency(x['accrualPeriodicity']),
             'spatial': lambda x: self._clean_spatial(x['spatial']),
             'language': lambda x: x['language'],
             'source_identifier': lambda x: x['identifier'],
