@@ -8,6 +8,7 @@ import ckan.plugins as plugins
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
+from pyproj import Proj, transform
 
 log = getLogger(__name__)
 
@@ -245,13 +246,18 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         # so we throw an error and leave it as-is
         cornerPoints = dia_values.get('corner-points')
         if spatial_srid and spatial_geojson is not None:
+            inProj = None
+            try:
+                inProj = Proj('+init=EPSG:' + spatial_srid)
+            except RuntimeError:
+                # When the SRID is unknown, don't convert
+                pass
+
             if cornerPoints:
                     log.warn('Multiple geometries, with a single SRID. Will not convert Geometry. cornerPoints:  {} spatial_geojson: {} SRID: EPSG:{}'.format(cornerPoints, spatial_geojson, spatial_srid))
-            else:
-                from pyproj import Proj, transform
+            elif inProj:
 
                 outProj = Proj('+init=EPSG:4326')
-                inProj = Proj('+init=EPSG:' + spatial_srid)
 
                 if spatial_geojson['type'] == 'MultiPolygon':
                     new_polygons = []
