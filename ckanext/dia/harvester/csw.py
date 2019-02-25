@@ -159,6 +159,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             except (KeyError, IndexError):
                 pass
 
+        package_dict['source_identifier'] = iso_values['guid']
         package_issued = iso_values['date-released'] or iso_values['date-created']
         package_modified = iso_values['date-updated'] or iso_values['metadata-date']
 
