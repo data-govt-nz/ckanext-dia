@@ -42,17 +42,19 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
         print self.__doc__
 
     def cleanup_datastore(self):
-        # E.B 15/3/18 HACK: running the datastore 20 times in a row allows us to 
-        # get datastore table cleanup to work. Without this hack only 300 tables 
+        # E.B 15/3/18 HACK: running the datastore 20 times in a row allows us to
+        # get datastore table cleanup to work. Without this hack only 300 tables
         # will be cleaned up.
+        start_offset = 0
         for i in xrange(20):
             print 'invoking iteration %s of the cleanup_datastore_once function' % i
-            deletes, errors = self.cleanup_datastore_once()
+            deletes, errors, total_tested = self.cleanup_datastore_once(start_offset)
+            start_offset += total_tested - errors - deletes
             if deletes == 0:
                 print 'no datastore tables remain to be deleted.'
                 break
 
-    def cleanup_datastore_once(self):
+    def cleanup_datastore_once(self, start_offset):
         user = logic.get_action('get_site_user')({'ignore_auth': True}, {})
         context = {
             'model': model,
@@ -68,11 +70,13 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
 
         # query datastore to get all resources from the _table_metadata
         resource_id_list = []
-        for offset in itertools.count(start=0, step=100):
+        total_tested = 0
+        for offset in itertools.count(start=start_offset, step=100):
             print "Load metadata records from datastore (offset: %s)" % offset
-            record_list, has_next_page = self._get_datastore_table_page(context, offset)  # noqa
+            record_list, tested = self._get_datastore_table_page(context, offset)  # noqa
+            total_tested += tested
             resource_id_list.extend(record_list)
-            if not has_next_page:
+            if not tested > 0:
                 break
             if len(resource_id_list) > 250:
                 # Run a small chunk of the dataset to avoid locking up the
@@ -80,26 +84,58 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
                 # restarted)
                 break
 
+        print('Total resources missing but referenced in datastore: {}'.format(len(resource_id_list)))
+
+        def datastore_record_count(context, resource_id):
+            """
+            Wraps the search so that it returns None if NotFound, otherwise the total
+            """
+            try:
+                search = logic.get_action('datastore_search')(
+                    context,
+                    {'resource_id': resource_id}
+                )
+                count = search['total']
+            except logic.NotFound:
+                count = None
+
+            return count
+
+
         # delete the rows of the orphaned datastore tables
         delete_count = 0
         delete_error_count = 0
+
         for resource_id in resource_id_list:
+            count = datastore_record_count(context, resource_id)
+            if count is not None:
+                print('Deleting datastore table with {} entries for resource {} ...'.format(count, resource_id))
+            else:
+                print('No datastore table found for resource {}'.format(resource_id))
+                delete_error_count += 1
+                continue
+
             try:
                 logic.get_action('datastore_delete')(
                     context,
                     {'resource_id': resource_id, 'force': True}
                 )
-                print "Table '%s' deleted (not dropped)" % resource_id
-                delete_count += 1
             except AttributeError as e:
-                print("Issue with dropping resource {}".format(resource_id))
-                delete_error_count += 1
-                logger.exception("Unable to drop resource: '%s'",
-                                 resource_id, exc_info=e)
+                # datastore_delete references resource.extras when there is no resource
+                if e.message != "'NoneType' object has no attribute 'extras'":
+                    raise(e)
 
-        print "Deleted content of %s tables" % delete_count
+            count = datastore_record_count(context, resource_id)
+            if count is None:
+                print('Delete succeeded')
+                delete_count += 1
+            else:
+                print('Delete failed! (search for datastore table succeeded)')
+                delete_error_count += 1
+
+        print "Deleted %s datastore tables" % delete_count
         print "Deletion failed for %s tables" % delete_error_count
-        return (delete_count, delete_error_count)
+        return (delete_count, delete_error_count, total_tested)
 
     def _get_datastore_table_page(self, context, offset=0):
         # query datastore to get all resources from the _table_metadata
@@ -125,6 +161,7 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
                 print "Resource '%s' found" % record['name']
             except logic.NotFound:
                 resource_id_list.append(record['name'])
+                context.pop('__auth_audit', None)
                 print "Resource '%s' *not* found" % record['name']
             except KeyError:
                 continue
@@ -136,7 +173,5 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
                 logger.exception("Unable to lookup resource: '%s'",
                                  record['name'], exc_info=e)
 
-        # are there more records?
-        has_next_page = (len(result['records']) > 0)
-
-        return (resource_id_list, has_next_page)
+        tested = len(result['records'])
+        return (resource_id_list, tested)
