@@ -1,6 +1,7 @@
 import sys
 import logging
 import itertools
+import time
 import ckan.lib.cli
 import ckan.logic as logic
 import ckan.model as model
@@ -42,19 +43,6 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
         print self.__doc__
 
     def cleanup_datastore(self):
-        # E.B 15/3/18 HACK: running the datastore 20 times in a row allows us to
-        # get datastore table cleanup to work. Without this hack only 300 tables
-        # will be cleaned up.
-        start_offset = 0
-        for i in xrange(20):
-            print 'invoking iteration %s of the cleanup_datastore_once function' % i
-            deletes, errors, total_tested = self.cleanup_datastore_once(start_offset)
-            start_offset += total_tested - errors - deletes
-            if deletes == 0:
-                print 'no datastore tables remain to be deleted.'
-                break
-
-    def cleanup_datastore_once(self, start_offset):
         user = logic.get_action('get_site_user')({'ignore_auth': True}, {})
         context = {
             'model': model,
@@ -69,22 +57,55 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
             sys.exit(1)
 
         # query datastore to get all resources from the _table_metadata
-        resource_id_list = []
-        total_tested = 0
-        for offset in itertools.count(start=start_offset, step=100):
-            print "Load metadata records from datastore (offset: %s)" % offset
-            record_list, tested = self._get_datastore_table_page(context, offset)  # noqa
-            total_tested += tested
-            resource_id_list.extend(record_list)
-            if not tested > 0:
-                break
-            if len(resource_id_list) > 250:
+        print("Loading metadata records from datastore")
+        all_datastore_tables = self._get_all_datastore_tables(context)
+
+        chunk_size = 100
+        total_deleted = 0
+        failed_deletes = []
+        for offset in itertools.count(start=0, step=chunk_size):
+            end_chunk_index = offset + chunk_size
+            datastore_tables_chunk = all_datastore_tables[offset:end_chunk_index]
+            orphan_list = self._find_orphaned_datastore_tables(context, datastore_tables_chunk)
+            if len(orphan_list) > 0:
                 # Run a small chunk of the dataset to avoid locking up the
                 # database for a *really* long time(read: until postgres is
                 # restarted)
+                delete_count, error_list = self._delete_orphans(context, orphan_list)
+                total_deleted += delete_count
+                failed_deletes.extend(error_list)
+                print('Deleted in this chunk: {}'.format(delete_count))
+                print('Errored in this chunk: {}'.format(len(error_list)))
+
+            if end_chunk_index >= len(all_datastore_tables):
                 break
 
-        print('Total resources missing but referenced in datastore: {}'.format(len(resource_id_list)))
+            print('{} tables checked, {} more to go...'.format(end_chunk_index, len(all_datastore_tables) - end_chunk_index))
+            time.sleep(1)
+
+        updated_table_count = len(self._get_all_datastore_tables(context))
+
+        print('Cleanup complete!')
+        print('Total datastore tables before: {} and after: {}'.format(len(all_datastore_tables), updated_table_count))
+        print('Total orphaned datastore tables deleted: {}'.format(total_deleted))
+        print('Total errors when attempting deletion: {}'.format(len(failed_deletes)))
+        if len(failed_deletes) > 0 and len(failed_deletes) < 10: # don't print if too many
+            print('Datastore table names that failed to delete: {}'.format(failed_deletes))
+
+    def _get_all_datastore_tables(self, context):
+        result_set = logic.get_action('datastore_search')(
+            context,
+            {
+                'resource_id': '_table_metadata',
+                'limit': 50000, # arbitrarily high, but default limit is 100
+            }
+        )
+
+        return result_set.get('records', [])
+
+
+    def _delete_orphans(self, context, resource_id_list):
+        print('Batch deleting {} ophaned datastore records'.format(len(resource_id_list)))
 
         def datastore_record_count(context, resource_id):
             """
@@ -102,17 +123,15 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
             return count
 
 
-        # delete the rows of the orphaned datastore tables
+        # delete orphaned datastore tables
         delete_count = 0
-        delete_error_count = 0
+        delete_errors = []
 
         for resource_id in resource_id_list:
             count = datastore_record_count(context, resource_id)
-            if count is not None:
-                print('Deleting datastore table with {} entries for resource {} ...'.format(count, resource_id))
-            else:
+            if count is None:
                 print('No datastore table found for resource {}'.format(resource_id))
-                delete_error_count += 1
+                delete_errors.append(resource_id)
                 continue
 
             try:
@@ -126,29 +145,15 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
                     raise(e)
 
             count = datastore_record_count(context, resource_id)
-            if count is None:
-                print('Delete succeeded')
-                delete_count += 1
-            else:
-                print('Delete failed! (search for datastore table succeeded)')
-                delete_error_count += 1
+            if count is not None:
+                print('Datastore table {} failed to delete'.format(resource_id))
+                delete_errors.append(resource_id)
 
-        print "Deleted %s datastore tables" % delete_count
-        print "Deletion failed for %s tables" % delete_error_count
-        return (delete_count, delete_error_count, total_tested)
+        return (delete_count, delete_errors)
 
-    def _get_datastore_table_page(self, context, offset=0):
-        # query datastore to get all resources from the _table_metadata
-        result = logic.get_action('datastore_search')(
-            context,
-            {
-                'resource_id': '_table_metadata',
-                'offset': offset
-            }
-        )
-
-        resource_id_list = []
-        for record in result['records']:
+    def _find_orphaned_datastore_tables(self, context, datastore_tables_chunk):
+        orphan_list = []
+        for record in datastore_tables_chunk:
             try:
                 # ignore 'alias' records
                 if record['alias_of']:
@@ -160,7 +165,7 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
                 )
                 print "Resource '%s' found" % record['name']
             except logic.NotFound:
-                resource_id_list.append(record['name'])
+                orphan_list.append(record['name'])
                 context.pop('__auth_audit', None)
                 print "Resource '%s' *not* found" % record['name']
             except KeyError:
@@ -173,5 +178,4 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
                 logger.exception("Unable to lookup resource: '%s'",
                                  record['name'], exc_info=e)
 
-        tested = len(result['records'])
-        return (resource_id_list, tested)
+        return orphan_list
