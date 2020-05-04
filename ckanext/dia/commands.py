@@ -148,6 +148,8 @@ class AdminCommand(ckan.lib.cli.CkanCommand):
             if count is not None:
                 print('Datastore table {} failed to delete'.format(resource_id))
                 delete_errors.append(resource_id)
+            else:
+                delete_count += 1
 
         return (delete_count, delete_errors)
 
