@@ -8,6 +8,7 @@ import ckan.plugins as plugins
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
+from ckanext.dia.converters import strip_invalid_tags_content
 from pyproj import Proj, transform
 from clean_frequency import clean_frequency
 
@@ -215,6 +216,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             conf = {}
 
         tags = package_dict.get('tags', [])
+        tags = strip_invalid_tags_content(tags)
         tags.extend(conf.get('default_tags', []))
         package_dict['tags'] = dict((tag['name'], tag) for tag in tags).values()
 

@@ -8,6 +8,7 @@ from ckan import model
 import ckan.plugins as plugins
 from ckan.logic.action.get import license_list
 from ckanext.dcat.harvesters import DCATJSONHarvester
+from ckanext.dia.converters import strip_invalid_tags_content
 from clean_frequency import clean_frequency
 
 log = getLogger(__name__)
@@ -151,6 +152,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
 
         return package_dict, dcat_dict
 
+
     def modify_package_dict(self, package_dict, dcat_dict, harvest_object):
         try:
             conf = json.loads(harvest_object.source.config)
@@ -160,10 +162,9 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             conf = {}
 
         tags = package_dict.get('tags', [])
+        tags = strip_invalid_tags_content(tags)
         tags.extend(conf.get('default_tags', []))
         package_dict['tags'] = dict((tag['name'], tag) for tag in tags).values()
-
-        log.error(harvest_object.source.config)
 
         context = {'model': model, 'user': plugins.toolkit.c.user}
 
