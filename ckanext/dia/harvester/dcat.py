@@ -3,6 +3,7 @@ from string import Template
 import json
 
 import requests
+import re
 
 from ckan import model
 import ckan.plugins as plugins
@@ -151,6 +152,21 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
 
         return package_dict, dcat_dict
 
+
+    def _strip_invalid_tags_content(self, tags):
+        '''Takes a list of tag dicts, converts invalid characters to spaces
+        and then removes any duplicate spaces.'''
+
+        def convert_tag(tag):
+            # Replace bad characters with spaces
+            tag['name'] = re.sub('[^\w|^\-|^\.]', ' ', tag['name'])
+            # Remove redundant spaces
+            tag['name'] = re.sub(' {2,}', ' ', tag['name'])
+            return tag
+
+        return map(convert_tag, tags)
+
+
     def modify_package_dict(self, package_dict, dcat_dict, harvest_object):
         try:
             conf = json.loads(harvest_object.source.config)
@@ -160,10 +176,9 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             conf = {}
 
         tags = package_dict.get('tags', [])
+        tags = self._strip_invalid_tags_content(tags)
         tags.extend(conf.get('default_tags', []))
         package_dict['tags'] = dict((tag['name'], tag) for tag in tags).values()
-
-        log.error(harvest_object.source.config)
 
         context = {'model': model, 'user': plugins.toolkit.c.user}
 
