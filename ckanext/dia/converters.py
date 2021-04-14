@@ -1,3 +1,4 @@
+import re
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -22,3 +23,17 @@ def fix_code_style_list(key, data, errors, context):
         if isinstance(py_list, list):
             log.info(u"Converted code-style list '{}' into text format".format(raw))
             data[key] = u' & '.join(py_list)
+
+
+def strip_invalid_tags_content(tags):
+    '''Takes a list of tag dicts, converts invalid characters to spaces
+    and then removes any duplicate spaces.'''
+
+    def convert_tag(tag):
+        # Replace bad characters with spaces
+        tag['name'] = re.sub('[^\w|^\-|^\.]', ' ', tag['name'])
+        # Remove redundant spaces
+        tag['name'] = re.sub(' {2,}', ' ', tag['name'])
+        return tag
+
+    return map(convert_tag, tags)
