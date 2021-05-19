@@ -16,7 +16,7 @@ class DIAValidationPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IValidators)
 
     def update_config(self, config):
-        # monkeypatching isodate and extra_key_not_in_root_schema validators
+        # monkeypatching validators
         ckan.logic.validators.isodate = validators.isodate
         ckan.logic.validators.extra_key_not_in_root_schema = validators.extra_key_not_in_root_schema
 
