@@ -1,3 +1,4 @@
+from builtins import map
 import re
 from logging import getLogger
 
@@ -36,4 +37,4 @@ def strip_invalid_tags_content(tags):
         tag['name'] = re.sub(' {2,}', ' ', tag['name'])
         return tag
 
-    return map(convert_tag, tags)
+    return list(map(convert_tag, tags))

@@ -1,3 +1,4 @@
+from past.builtins import basestring
 import datetime
 
 from ckan.common import _
@@ -20,7 +21,7 @@ def isodate(value, context):
         return None
     try:
         return helpers.date_str_to_datetime(value)
-    except (TypeError, ValueError), e:
+    except (TypeError, ValueError) as e:
         raise Invalid(_('Date format incorrect - isodate') + ": {}".format(value))
 
 

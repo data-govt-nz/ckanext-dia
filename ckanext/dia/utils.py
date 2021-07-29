@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import logging
 import itertools
@@ -19,7 +20,7 @@ def cleanup_datastore():
         logic.check_access('datastore_delete', context)
         logic.check_access('resource_show', context)
     except logic.NotAuthorized:
-        print "User is not authorized to perform this action."
+        print("User is not authorized to perform this action.")
         sys.exit(1)
 
     # query datastore to get all resources from the _table_metadata
@@ -131,18 +132,18 @@ def _find_orphaned_datastore_tables(context, datastore_tables_chunk):
                 context,
                 {'id': record['name']}
             )
-            print "Resource '%s' found" % record['name']
+            print("Resource '%s' found" % record['name'])
         except logic.NotFound:
             orphan_list.append(record['name'])
             context.pop('__auth_audit', None)
-            print "Resource '%s' *not* found" % record['name']
+            print("Resource '%s' *not* found" % record['name'])
         except KeyError:
             continue
         except Exception as e:
             # Added as something did not check the authorization for
             # doing a resource_show.
-            print "Unexpected error looking up resource: '%s'" % (
-                    record['name'])
+            print("Unexpected error looking up resource: '%s'" % (
+                    record['name']))
             logger.exception("Unable to lookup resource: '%s'",
                                 record['name'], exc_info=e)
 

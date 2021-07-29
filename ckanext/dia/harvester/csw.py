@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import json
 import pycountry
 import re
@@ -10,7 +11,7 @@ from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
 from ckanext.dia.converters import strip_invalid_tags_content
 from pyproj import Proj, transform
-from clean_frequency import clean_frequency
+from .clean_frequency import clean_frequency
 
 log = getLogger(__name__)
 
@@ -154,7 +155,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             'format': lambda x: _filter_format(x['data-format'][0]['name'])
         }
 
-        for k, v in dia_mappings.items():
+        for k, v in list(dia_mappings.items()):
             try:
                 package_dict[k] = v(dia_values)
             except (KeyError, IndexError):
@@ -176,7 +177,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             'maintainer_email': lambda x: x['metadata-point-of-contact'][0]['contact-info']['email']
         }
 
-        for k, v in iso_mappings.items():
+        for k, v in list(iso_mappings.items()):
             try:
                 package_dict[k] = v(iso_values)
             except (KeyError, IndexError):
@@ -218,7 +219,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
         tags = package_dict.get('tags', [])
         tags = strip_invalid_tags_content(tags)
         tags.extend(conf.get('default_tags', []))
-        package_dict['tags'] = dict((tag['name'], tag) for tag in tags).values()
+        package_dict['tags'] = list(dict((tag['name'], tag) for tag in tags).values())
 
         # Adding default_groups from config. This was previously not supported
         # by ckanext-spatial.
@@ -228,11 +229,11 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
             try:
                 group = plugins.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
                 groups.append({'id': group['id'], 'name': group['name']})
-            except plugins.toolkit.ObjectNotFound, e:
+            except plugins.toolkit.ObjectNotFound as e:
                 logging.error('Default group %s not found, proceeding without.' % group_name_or_id)
                 pass
 
-        package_dict['groups'] =  dict((group['id'], group) for group in groups).values()
+        package_dict['groups'] =  list(dict((group['id'], group) for group in groups).values())
 
         # CSW records can have a non wgs-84 projection, we will need to convert the geojson to wgs-84
         for extra in package_dict['extras']:
@@ -326,7 +327,7 @@ def _get_license(dia_values):
         url_to_id[license['url']] = license['id']
 
     url_regex_to_id = {}
-    for url, id in url_to_id.iteritems():
+    for url, id in url_to_id.items():
         # all urls are https and end with a trailing slash
         # what we are matching might not be
         escaped_url = re.escape(url.replace('https', '').strip('/'))

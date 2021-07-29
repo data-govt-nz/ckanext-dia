@@ -63,7 +63,7 @@ def clean_frequency(frequency):
     - All other things are set to Irregular and and logged.
     """
     log.debug("_clean_frequency: {0}".format(frequency))
-    if frequency in iso_8601_frequency.values():
+    if frequency in list(iso_8601_frequency.values()):
         return frequency
     if frequency in iso_8601_frequency:
         return iso_8601_frequency[frequency]

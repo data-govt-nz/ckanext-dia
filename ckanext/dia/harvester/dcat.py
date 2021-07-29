@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from past.builtins import basestring
 from logging import getLogger
 from string import Template
 import json
@@ -9,7 +11,7 @@ import ckan.plugins as plugins
 from ckan.logic.action.get import license_list
 from ckanext.dcat.harvesters import DCATJSONHarvester
 from ckanext.dia.converters import strip_invalid_tags_content
-from clean_frequency import clean_frequency
+from .clean_frequency import clean_frequency
 
 log = getLogger(__name__)
 
@@ -141,10 +143,10 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             'temporal': lambda x: x['temporal']
         }
 
-        for k, v in mappings.items():
+        for k, v in list(mappings.items()):
             try:
                 package_dict[k] = v(dcat_dict)
-            except KeyError, IndexError:
+            except KeyError as IndexError:
                 pass
 
         log.debug("DCAT package_dict: {}".format(package_dict))
@@ -164,7 +166,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         tags = package_dict.get('tags', [])
         tags = strip_invalid_tags_content(tags)
         tags.extend(conf.get('default_tags', []))
-        package_dict['tags'] = dict((tag['name'], tag) for tag in tags).values()
+        package_dict['tags'] = list(dict((tag['name'], tag) for tag in tags).values())
 
         context = {'model': model, 'user': plugins.toolkit.c.user}
 
@@ -182,11 +184,11 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             try:
                 group = plugins.toolkit.get_action('group_show')(context, {'id': group_name_or_id})
                 groups.append({'id': group['id'], 'name': group['name']})
-            except plugins.toolkit.ObjectNotFound, e:
+            except plugins.toolkit.ObjectNotFound as e:
                 log.error('Default group %s not found, proceeding without.' % group_name_or_id)
                 pass
 
-        package_dict['groups'] = dict((group['name'], group) for group in groups).values()
+        package_dict['groups'] = list(dict((group['name'], group) for group in groups).values())
 
         if package_dict.get('theme', None) and isinstance(package_dict.get('theme'), list):
             package_dict['theme'] = json.dumps(package_dict.get('theme'))

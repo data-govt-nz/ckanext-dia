@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 from ckantoolkit import CkanCommand
 import ckanext.dia.utils as utils
@@ -34,6 +35,6 @@ class AdminCommand(CkanCommand):
             sys.exit(1)
 
     def help(self):
-        print self.__doc__
+        print(self.__doc__)
 
 
