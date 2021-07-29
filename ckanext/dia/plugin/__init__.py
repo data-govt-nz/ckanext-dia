@@ -9,11 +9,11 @@ from ckanext.dia.action import get
 
 if p.toolkit.check_ckan_version(min_version='2.9.0'):
     from ckanext.dia.plugin.flask_plugin import (
-        DIANoHomepageMixin
+        DIANoHomepageMixin, DIACommandsMixin
     )
 else:
     from ckanext.dia.plugin.pylons_plugin import (
-        DIANoHomepageMixin
+        DIANoHomepageMixin, DIACommandsMixin
     )
 
 log = getLogger(__name__)
@@ -58,4 +58,7 @@ class DIANoHomepagePlugin(DIANoHomepageMixin, p.SingletonPlugin):
 
     Homepage for catalog will be handled on CWP/Silverstripe site
     """
+    pass
+
+class DIACommandsPlugin(DIACommandsMixin, p.SingletonPlugin):
     pass

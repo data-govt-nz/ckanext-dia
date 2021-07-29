@@ -29,23 +29,26 @@ plugins are:
 * `diaharvester` -- Overrides for the CSW harvester, needs to be enabled before `csw_harvester`
 * `diadcatjsonharvester` -- Overrides for the DCAT JSON harvester, needs to be enabled instead of `dcat_json_harvester`
 * `dianohomepage` -- Redirect the CKAN homepage to `/dataset`
+* `diacommands` -- Provides cli commands (only needed on ckan >= 2.9)
 
-## Command
+## Commands
 
-This extension currently provides a paster command to clean up the datastore database.
+This extension currently provides a cli command to clean up the datastore database.
 Resources are not deleted when re-harvesting. This command deletes the old resources that
 are no longer referenced.
 
 ```bash
-paster --plugin=ckanext-dia admin cleanup_datastore -c /PATH_TO_YOUR_INI_FILE/dev.ini
+# ckan >= 2.9
+ckan -c /PATH_TO_YOUR_INI_FILE/FILENAME.ini dia cleanup-datastore
+
+# ckan < 2.9
+paster --plugin=ckanext-dia admin cleanup_datastore -c /PATH_TO_YOUR_INI_FILE/FILENAME.ini
 ```
 
-Note: That if you default_datastore is very large this may time out and need
-to be restarted.  Also although it deletes the resource's tables form the
+Note: That if your default_datastore is very large this may time out and need
+to be restarted.  Also although it deletes the resource's tables from the
 datastore_default it does not delete entries from archival, resource,
 resource_revision and resource_view.
 It also failed on the first run to delete some resources but they were deleted on subsequent runs.
-
-
 
 Thanks @opendata-swiss who wrote the command at https://github.com/opendata-swiss/ckanext-switzerland

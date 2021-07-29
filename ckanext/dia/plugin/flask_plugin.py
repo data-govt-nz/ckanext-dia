@@ -5,6 +5,15 @@ import ckanext.dia.cli as cli
 import ckanext.dia.views as views
 
 
+class DIACommandsMixin(p.SingletonPlugin):
+    p.implements(p.IClick)
+
+    # IClick
+
+    def get_commands(self):
+        return cli.get_commands()
+
+
 class DIANoHomepageMixin(p.SingletonPlugin):
     p.implements(p.IBlueprint)
 
