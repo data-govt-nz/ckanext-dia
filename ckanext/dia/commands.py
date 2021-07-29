@@ -10,8 +10,8 @@ class AdminCommand(CkanCommand):
 
         command:
         help  - prints this help
-        cleanup_datastore -    Cleans datastore by deleting datastore resource tables
-                               that are no longer referenced by datasets
+        cleanup_datastore - Cleans datastore by deleting datastore resource
+                            tables that are no longer referenced by datasets
 
     This command originally came from ckanext-switzerland
                 https://github.com/opendata-swiss/ckanext-switzerland/
@@ -36,5 +36,3 @@ class AdminCommand(CkanCommand):
 
     def help(self):
         print(self.__doc__)
-
-

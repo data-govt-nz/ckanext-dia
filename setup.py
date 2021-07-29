@@ -7,7 +7,8 @@ setup(
     version=version,
     description='DIA-related modifications to CKAN',
     long_description='',
-    classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    classifiers=[],
     keywords='',
     author='Data.govt.nz',
     author_email='info@data.govt.nz',
@@ -21,8 +22,7 @@ setup(
         "pycountry",
         "pyproj"
     ],
-    entry_points=\
-    """
+    entry_points="""
     [ckan.plugins]
     diavalidation=ckanext.dia.plugin:DIAValidationPlugin
     diaschema=ckanext.dia.plugin:DIASchemaPlugin

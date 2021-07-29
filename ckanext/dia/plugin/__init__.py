@@ -23,11 +23,11 @@ class DIAValidationPlugin(p.SingletonPlugin):
     p.implements(p.IConfigurer)
     p.implements(p.IValidators)
 
-
     def update_config(self, config):
         # monkeypatching validators
         logic.validators.isodate = validators.isodate
-        logic.validators.extra_key_not_in_root_schema = validators.extra_key_not_in_root_schema
+        logic.validators.extra_key_not_in_root_schema = (
+            validators.extra_key_not_in_root_schema)
 
     def get_validators(self):
         return {
@@ -59,6 +59,7 @@ class DIANoHomepagePlugin(DIANoHomepageMixin, p.SingletonPlugin):
     Homepage for catalog will be handled on CWP/Silverstripe site
     """
     pass
+
 
 class DIACommandsPlugin(DIACommandsMixin, p.SingletonPlugin):
     pass

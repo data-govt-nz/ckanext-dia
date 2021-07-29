@@ -2,8 +2,10 @@
 
 import ckan.plugins as p
 
+
 class DIACommandsMixin(p.SingletonPlugin):
     pass
+
 
 class DIANoHomepageMixin(p.SingletonPlugin):
     p.implements(p.IRoutes, inherit=True)

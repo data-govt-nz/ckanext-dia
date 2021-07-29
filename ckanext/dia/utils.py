@@ -33,7 +33,8 @@ def cleanup_datastore():
     for offset in itertools.count(start=0, step=chunk_size):
         end_chunk_index = offset + chunk_size
         datastore_tables_chunk = all_datastore_tables[offset:end_chunk_index]
-        orphan_list = _find_orphaned_datastore_tables(context, datastore_tables_chunk)
+        orphan_list = _find_orphaned_datastore_tables(
+            context, datastore_tables_chunk)
         if len(orphan_list) > 0:
             # Run a small chunk of the dataset to avoid locking up the
             # database for a *really* long time(read: until postgres is
@@ -47,24 +48,30 @@ def cleanup_datastore():
         if end_chunk_index >= len(all_datastore_tables):
             break
 
-        print('{} tables checked, {} more to go...'.format(end_chunk_index, len(all_datastore_tables) - end_chunk_index))
+        print('{} tables checked, {} more to go...'.format(
+            end_chunk_index, len(all_datastore_tables) - end_chunk_index))
         time.sleep(1)
 
     updated_table_count = len(_get_all_datastore_tables(context))
 
     print('Cleanup complete!')
-    print('Total datastore tables before: {} and after: {}'.format(len(all_datastore_tables), updated_table_count))
+    print('Total datastore tables before: {} and after: {}'.format(
+        len(all_datastore_tables), updated_table_count))
     print('Total orphaned datastore tables deleted: {}'.format(total_deleted))
-    print('Total errors when attempting deletion: {}'.format(len(failed_deletes)))
-    if len(failed_deletes) > 0 and len(failed_deletes) < 10: # don't print if too many
-        print('Datastore table names that failed to delete: {}'.format(failed_deletes))
+    print('Total errors when attempting deletion: {}'
+          .format(len(failed_deletes)))
+    if len(failed_deletes) > 0 and len(failed_deletes) < 10:
+        # don't print if too many
+        print('Datastore table names that failed to delete: {}'
+              .format(failed_deletes))
+
 
 def _get_all_datastore_tables(context):
     result_set = logic.get_action('datastore_search')(
         context,
         {
             'resource_id': '_table_metadata',
-            'limit': 50000, # arbitrarily high, but default limit is 100
+            'limit': 50000,  # arbitrarily high, but default limit is 100
         }
     )
 
@@ -72,11 +79,13 @@ def _get_all_datastore_tables(context):
 
 
 def _delete_orphans(context, resource_id_list):
-    print('Batch deleting {} ophaned datastore records'.format(len(resource_id_list)))
+    print('Batch deleting {} ophaned datastore records'
+          .format(len(resource_id_list)))
 
     def datastore_record_count(context, resource_id):
         """
-        Wraps the search so that it returns None if NotFound, otherwise the total
+        Wraps the search so that it returns None if NotFound,
+        otherwise the total
         """
         try:
             search = logic.get_action('datastore_search')(
@@ -89,7 +98,6 @@ def _delete_orphans(context, resource_id_list):
 
         return count
 
-
     # delete orphaned datastore tables
     delete_count = 0
     delete_errors = []
@@ -97,7 +105,8 @@ def _delete_orphans(context, resource_id_list):
     for resource_id in resource_id_list:
         count = datastore_record_count(context, resource_id)
         if count is None:
-            print('No datastore table found for resource {}'.format(resource_id))
+            print('No datastore table found for resource {}'
+                  .format(resource_id))
             delete_errors.append(resource_id)
             continue
 
@@ -107,7 +116,8 @@ def _delete_orphans(context, resource_id_list):
                 {'resource_id': resource_id, 'force': True}
             )
         except AttributeError as e:
-            # datastore_delete references resource.extras when there is no resource
+            # datastore_delete references resource.extras
+            # when there is no resource
             if e.message != "'NoneType' object has no attribute 'extras'":
                 raise(e)
 
@@ -119,6 +129,7 @@ def _delete_orphans(context, resource_id_list):
             delete_count += 1
 
     return (delete_count, delete_errors)
+
 
 def _find_orphaned_datastore_tables(context, datastore_tables_chunk):
     orphan_list = []
@@ -143,8 +154,8 @@ def _find_orphaned_datastore_tables(context, datastore_tables_chunk):
             # Added as something did not check the authorization for
             # doing a resource_show.
             print("Unexpected error looking up resource: '%s'" % (
-                    record['name']))
+                record['name']))
             logger.exception("Unable to lookup resource: '%s'",
-                                record['name'], exc_info=e)
+                             record['name'], exc_info=e)
 
     return orphan_list

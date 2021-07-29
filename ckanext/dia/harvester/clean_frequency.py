@@ -5,7 +5,7 @@ iso_8601_frequency = {
     "R/P1Y": "Annual",
     "R/P2Y": "Biennial",
     "R/P2M": "Bimonthly",
-    "R/P0.5M": "Bimonthly",
+    "R/P2M": "Bimonthly",
     "R/P0.5W": "Biweekly",
     "R/P2W": "Biweekly",
     "R/PT1S": "Continuously updated",
@@ -68,10 +68,16 @@ def clean_frequency(frequency):
     if frequency in iso_8601_frequency:
         return iso_8601_frequency[frequency]
     if frequency in non_iso_8601_to_iso_8601_frequency:
-        log.info("Harvested frequency of {0} mapped to {1}:".format(frequency, non_iso_8601_to_iso_8601_frequency[frequency]))
+        log.info(
+            "Harvested frequency of {0} mapped to {1}:"
+            .format(frequency, non_iso_8601_to_iso_8601_frequency[frequency])
+        )
         return non_iso_8601_to_iso_8601_frequency[frequency]
     if frequency.lower() in csw_non_iso_8601_to_iso_8601_frequency:
         return csw_non_iso_8601_to_iso_8601_frequency[frequency.lower()]
 
-    log.warning("frequency_of_update found in dcat harvesting is an unknown value: {0}".format(frequency))
+    log.warning(
+        "frequency_of_update found in dcat harvesting is an unknown value: {0}"
+        .format(frequency)
+    )
     return 'Irregular'

@@ -1,4 +1,5 @@
-from ckan.lib.navl.validators import ignore_missing, not_empty, ignore, not_missing
+from ckan.lib.navl.validators import (
+    ignore_missing, not_empty, ignore, not_missing)
 
 
 def default_extras_schema():
