@@ -1,6 +1,5 @@
 import logging
 
-import sqlalchemy
 from paste.deploy.converters import asbool
 
 import ckan.logic as logic
@@ -20,7 +19,6 @@ log = logging.getLogger('ckan.logic')
 # actions in the action API.
 _check_access = logic.check_access
 _get_or_bust = logic.get_or_bust
-_or_ = sqlalchemy.or_
 
 
 @side_effect_free

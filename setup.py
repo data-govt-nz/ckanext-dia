@@ -20,7 +20,8 @@ setup(
     zip_safe=False,
     install_requires=[
         "pycountry",
-        "pyproj"
+        "pyproj",
+        "future"
     ],
     entry_points="""
     [ckan.plugins]
