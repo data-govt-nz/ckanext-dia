@@ -16,8 +16,10 @@ It is expected that you will have these other CKAN extensions installed:
 You can use `pip` to install this plugin into your virtual environment:
 
 ```
-pip install -e 'https://github.com/data-govt-nz/ckanext-dia.git#egg=ckanext-dia==0.0.1'
+pip install -e 'https://github.com/data-govt-nz/ckanext-dia.git#egg=ckanext-dia==1.0.0'
 ```
+
+You can also install the specific dependencies using the appropriate requirements.txt file for your version of Python.
 
 ## Manual Testing for Harvesting Modifications
 

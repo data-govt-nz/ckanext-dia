@@ -10,3 +10,4 @@ aenum==3.1.0; python_version < '3.6'
 future==0.18.2
 pycountry==18.12.8
 pyproj==2.2.2
+six==1.16.0
