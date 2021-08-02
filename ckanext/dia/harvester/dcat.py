@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from past.builtins import basestring
+import six
 from logging import getLogger
 from string import Template
 import json
@@ -41,7 +41,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
     def _clean_spatial(self, spatial):
         # Convert things like "173.0039,-42.3167,174.2099,-41.0717" to
         # Polygon using templates from CSW
-        if isinstance(spatial, basestring):
+        if isinstance(spatial, six.string_types):
             xmin, ymin, xmax, ymax = spatial.split(',')
             return self.extent_template.substitute(
                 xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax

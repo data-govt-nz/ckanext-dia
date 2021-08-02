@@ -1,4 +1,4 @@
-from past.builtins import basestring
+import six
 import datetime
 
 from ckan.common import _
@@ -33,4 +33,4 @@ def extra_key_not_in_root_schema(key, data, errors, context):
 
 def force_lower(value, context=None):
     """Converts strings to lowercase, does nothing for other objects."""
-    return value.lower() if isinstance(value, basestring) else value
+    return value.lower() if isinstance(value, six.string_types) else value

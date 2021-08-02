@@ -386,7 +386,7 @@ def _get_license(dia_values):
         url_to_id[license['url']] = license['id']
 
     url_regex_to_id = {}
-    for url, id in url_to_id.items():
+    for url, id in list(url_to_id.items()):
         # all urls are https and end with a trailing slash
         # what we are matching might not be
         escaped_url = re.escape(url.replace('https', '').strip('/'))

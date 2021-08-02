@@ -1,3 +1,5 @@
+import six
+
 from ckan.lib.navl.validators import (
     ignore_missing, not_empty, ignore, not_missing)
 
@@ -5,7 +7,7 @@ from ckan.lib.navl.validators import (
 def default_extras_schema():
     return {
         'id': [ignore],
-        'key': [not_empty, str],
+        'key': [not_empty, six.text_type],
         'value': [not_missing],
         'state': [ignore],
         'deleted': [ignore_missing],
