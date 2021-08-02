@@ -4,7 +4,11 @@ from logging import getLogger
 import ckan.plugins as p
 from ckan import logic
 
-from ckanext.dia import validators, schema, converters
+from ckanext.dia import schema, converters
+from ckanext.dia.validators import (
+    isodate, extra_key_not_in_root_schema,
+    force_lower, natural_num_or_missing
+)
 from ckanext.dia.action import get
 
 if p.toolkit.check_ckan_version(min_version='2.9.0'):
@@ -20,19 +24,14 @@ log = getLogger(__name__)
 
 
 class DIAValidationPlugin(p.SingletonPlugin):
-    p.implements(p.IConfigurer)
     p.implements(p.IValidators)
-
-    def update_config(self, config):
-        # monkeypatching validators
-        logic.validators.isodate = validators.isodate
-        logic.validators.extra_key_not_in_root_schema = (
-            validators.extra_key_not_in_root_schema)
 
     def get_validators(self):
         return {
-            'force_lower': validators.force_lower,
-            'natural_num_or_missing': validators.natural_num_or_missing,
+            'isodate': isodate,
+            'extra_key_not_in_root_schema': extra_key_not_in_root_schema,
+            'force_lower': force_lower,
+            'natural_num_or_missing': natural_num_or_missing,
             'fix_code_style_list': converters.fix_code_style_list
         }
 
