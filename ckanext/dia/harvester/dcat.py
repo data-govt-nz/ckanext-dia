@@ -7,11 +7,11 @@ import json
 import requests
 
 from ckan import model
-import ckan.plugins as plugins
+import ckan.plugins.toolkit as tk
 from ckan.logic.action.get import license_list
 from ckanext.dcat.harvesters import DCATJSONHarvester
 from ckanext.dia.converters import strip_invalid_tags_content
-from .clean_frequency import clean_frequency
+from ckanext.dia.harvester.clean_frequency import clean_frequency
 
 log = getLogger(__name__)
 
@@ -157,26 +157,25 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         package_dict['tags'] = list(dict((tag['name'], tag)
                                     for tag in tags).values())
 
-        context = {'model': model, 'user': plugins.toolkit.c.user}
-
+        context = {'model': model, 'user': self._get_user_name()}
         groups = []
 
         # DATA-519: Get existing groups from the package
         # before appending default groups
         try:
             query = {'id': package_dict.get('name', None)}
-            original_package = plugins.toolkit.get_action(
+            original_package = tk.get_action(
                 'package_show')(context, query)
             groups = original_package['groups']
-        except plugins.toolkit.ObjectNotFound:
+        except tk.ObjectNotFound:
             pass
 
         for group_name_or_id in conf.get('default_groups', []):
             try:
-                group = plugins.toolkit.get_action('group_show')(
+                group = tk.get_action('group_show')(
                     context, {'id': group_name_or_id})
                 groups.append({'id': group['id'], 'name': group['name']})
-            except plugins.toolkit.ObjectNotFound:
+            except tk.ObjectNotFound:
                 log.error(
                     'Default group %s not found, proceeding without.'
                     % group_name_or_id)

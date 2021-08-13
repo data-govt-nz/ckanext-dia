@@ -12,6 +12,7 @@ from ckan.logic.action.get import license_list
 from ckanext.dia.converters import strip_invalid_tags_content
 from pyproj import Proj, transform
 from .clean_frequency import clean_frequency
+from ckan.plugins import toolkit as tk
 
 log = getLogger(__name__)
 
@@ -215,7 +216,7 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
                 pass
 
         # Override resource name, set it to package title if unset
-        RESOURCE_NAME_CKAN_DEFAULT = plugins.toolkit._('Unnamed resource')
+        RESOURCE_NAME_CKAN_DEFAULT = tk._('Unnamed resource')
         package_title = package_dict.get('title', RESOURCE_NAME_CKAN_DEFAULT)
         for resource in package_dict['resources']:
             if resource['name'] == RESOURCE_NAME_CKAN_DEFAULT:
@@ -254,14 +255,14 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         # Adding default_groups from config. This was previously not supported
         # by ckanext-spatial.
-        context = {'model': model, 'user': plugins.toolkit.c.user}
+        context = {'model': model, 'user': self._get_user_name()}
         groups = []
         for group_name_or_id in conf.get('default_groups', []):
             try:
-                group = plugins.toolkit.get_action('group_show')(
+                group = tk.get_action('group_show')(
                     context, {'id': group_name_or_id})
                 groups.append({'id': group['id'], 'name': group['name']})
-            except plugins.toolkit.ObjectNotFound:
+            except tk.ObjectNotFound:
                 log.error(
                     'Default group %s not found, proceeding without.'
                     % group_name_or_id)
