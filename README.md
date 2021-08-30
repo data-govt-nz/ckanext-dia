@@ -1,5 +1,8 @@
 # CKANEXT-DIA
 
+## CKAN < 2.9 support
+As of `1.3.0` this extention has been made to work with CKAN 2.9. While attempts have been made to maintain compatibility with prior version of CKAN, there may be issues. If any issues are discovered we are happy to accept PRs. Alternatively for compatibility <2.9 the `1.2.0` tag can be used.
+
 ## What am I?
 
 A simple CKAN extension to hold all overrides to CKAN required by the DIA (Department
