@@ -1,18 +1,14 @@
 import logging
 
-import sqlalchemy
 from paste.deploy.converters import asbool
 
 import ckan.logic as logic
 import ckan.logic.schema
 import ckan.lib.dictization.model_dictize as model_dictize
-import ckan.model as model
 import ckan.plugins as plugins
 import ckan.lib.plugins as lib_plugins
 
 from ckan.logic.action.get import _add_tracking_summary_to_resource_dict
-
-from ckan.common import _
 
 from ckantoolkit import side_effect_free
 
@@ -23,16 +19,15 @@ log = logging.getLogger('ckan.logic')
 # actions in the action API.
 _check_access = logic.check_access
 _get_or_bust = logic.get_or_bust
-_or_ = sqlalchemy.or_
 
 
 @side_effect_free
 def package_show(context, data_dict):
     """Return the metadata of a dataset (package) and its resources.
 
-    IMPORTANT: This monkeypatches ckan core's `package_show` method, and bypasses
-    the `use_cache` part of that function. It was disabled for some reason, and
-    needs testing before switching it back on.
+    IMPORTANT: This monkeypatches ckan core's `package_show` method, and
+    bypasses the `use_cache` part of that function. It was disabled for
+    some reason, and needs testing before switching it back on.
 
     :param id: the id or name of the dataset
     :type id: string

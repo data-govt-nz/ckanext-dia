@@ -1,3 +1,4 @@
+import six
 import datetime
 
 from ckan.common import _
@@ -9,8 +10,8 @@ natural_number_validator = p.toolkit.get_validator('natural_number_validator')
 
 
 def natural_num_or_missing(value, context):
-     """Allows empty strings to pass natural_number validation."""
-     return value if value == '' else natural_number_validator(value, context)
+    """Allows empty strings to pass natural_number validation."""
+    return value if value == '' else natural_number_validator(value, context)
 
 
 def isodate(value, context):
@@ -20,8 +21,9 @@ def isodate(value, context):
         return None
     try:
         return helpers.date_str_to_datetime(value)
-    except (TypeError, ValueError), e:
-        raise Invalid(_('Date format incorrect - isodate') + ": {}".format(value))
+    except (TypeError, ValueError):
+        raise Invalid(_('Date format incorrect - isodate') +
+                      ": {}".format(value))
 
 
 def extra_key_not_in_root_schema(key, data, errors, context):
@@ -31,4 +33,4 @@ def extra_key_not_in_root_schema(key, data, errors, context):
 
 def force_lower(value, context=None):
     """Converts strings to lowercase, does nothing for other objects."""
-    return value.lower() if isinstance(value, basestring) else value
+    return value.lower() if isinstance(value, six.string_types) else value

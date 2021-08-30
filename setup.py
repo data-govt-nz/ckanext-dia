@@ -1,13 +1,14 @@
 from setuptools import setup, find_packages
 
-version = '1.2.0'
+version = '1.3.0'
 
 setup(
     name='ckanext-dia',
     version=version,
     description='DIA-related modifications to CKAN',
     long_description='',
-    classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+    classifiers=[],
     keywords='',
     author='Data.govt.nz',
     author_email='info@data.govt.nz',
@@ -19,10 +20,10 @@ setup(
     zip_safe=False,
     install_requires=[
         "pycountry",
-        "pyproj"
+        "pyproj",
+        "future"
     ],
-    entry_points=\
-    """
+    entry_points="""
     [ckan.plugins]
     diavalidation=ckanext.dia.plugin:DIAValidationPlugin
     diaschema=ckanext.dia.plugin:DIASchemaPlugin
@@ -30,6 +31,7 @@ setup(
     diaharvester=ckanext.dia.harvester.csw:DIASpatialHarvester
     diadcatjsonharvester=ckanext.dia.harvester.dcat:DIADCATJSONHarvester
     dianohomepage=ckanext.dia.plugin:DIANoHomepagePlugin
+    diacommands=ckanext.dia.plugin:DIACommandsPlugin
 
     [paste.paster_command]
     admin=ckanext.dia.commands:AdminCommand
