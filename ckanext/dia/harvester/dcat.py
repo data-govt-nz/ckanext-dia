@@ -3,6 +3,9 @@ import six
 from logging import getLogger
 from string import Template
 import json
+import traceback
+import re
+from urllib.parse import urlparse
 
 import requests
 
@@ -42,10 +45,20 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         # Convert things like "173.0039,-42.3167,174.2099,-41.0717" to
         # Polygon using templates from CSW
         if isinstance(spatial, six.string_types):
-            xmin, ymin, xmax, ymax = spatial.split(',')
-            return self.extent_template.substitute(
-                xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax
-            ).strip()
+            spatial = spatial.strip()
+            if re.match(r'^([\d\-\.]+\,){3}[\d\-\.]+$', spatial):
+                xmin, ymin, xmax, ymax = spatial.split(',')
+
+                if xmin == xmax:
+                    raise ValueError("Spatial x coordinates are the same.")
+                if ymin == ymax:
+                    raise ValueError("Spatial y coordinates are the same.")
+
+                return self.extent_template.substitute(
+                    xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax
+                ).strip()
+            else:
+                raise ValueError("Invalid spatial data.")
         elif isinstance(spatial, dict):
             return json.dumps(spatial)
         else:
@@ -67,7 +80,7 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         CC url is the harvested license link
     '''
 
-    def _fetch_license_id(self, license_url):
+    def _fetch_license_id(self, license_url, harvest_object):
         # if a license is not provided we need to return this as
         # other ie. copyright
         if license_url == "":
@@ -76,15 +89,25 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         licenses = license_list({'model': model}, {})
         try:
             resp = requests.get(license_url)
-        except Exception:
-            log.exception(
-                "Failed to get on license url: {}".format(license_url))
+        except (requests.exceptions.InvalidSchema,
+                requests.exceptions.InvalidURL,
+                requests.exceptions.MissingSchema):
+            self._save_object_error(
+                f'License URL is invalid.',
+                harvest_object)
+            return None
+        except Exception as e:
+            log.exception("Failed to fetch license.")
+            self._save_object_error(
+                f"Fetching license at '{license_url}' failed: {e}",
+                harvest_object)
             return None
         # dealing with direct CC url don't call for a json response
         try:
-            if "https://creativecommons.org" in license_url:
+            if urlparse(license_url).netloc == 'creativecommons.org':
                 for license in licenses:
-                    if license['url'] == resp.url and resp.status_code == 200:
+                    if (urlparse(license['url'])._replace(scheme='http') ==
+                       urlparse(resp.url)._replace(scheme='http') and resp.status_code == 200):
                         log.debug("Using license {}".format(license['id']))
                         return license['id']
         except Exception:
@@ -105,7 +128,9 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                     log.debug("Using license {}".format(license['id']))
                     return license['id']
         except Exception:
-            log.exception("Failed to retrieve license data")
+            self._save_object_error(
+                f'Failed to parse license, response not JSON. URL: {license_url}',
+                harvest_object)
             return None
 
     def _get_package_dict(self, harvest_object):
@@ -124,11 +149,11 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             'rights': lambda x: x['rights'],  # Not tested
             'frequency_of_update': lambda x:
                 clean_frequency(x['accrualPeriodicity']),
-            'spatial': lambda x: self._clean_spatial(x['spatial']),
             'language': lambda x: x['language'],
             'source_identifier': lambda x: x['identifier'],
             'license_url': lambda x: x['license'],
-            'license_id': lambda x: self._fetch_license_id(x['license']),
+            'license_id':
+                lambda x: self._fetch_license_id(x['license'], harvest_object),
             'temporal': lambda x: x['temporal']
         }
 
@@ -137,6 +162,22 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                 package_dict[k] = v(dcat_dict)
             except KeyError:
                 pass
+            except Exception:
+                self._save_object_error(
+                    f'Failed parsing data on {k}:\n{traceback.format_exc()}',
+                    harvest_object)
+
+        if dcat_dict.get('spatial') != "":
+            try:
+                package_dict['spatial'] = self._clean_spatial(dcat_dict['spatial'])
+            except ValueError as e:
+                self._save_object_error(
+                    f'Received invalid spatial data: {e}',
+                    harvest_object)
+        else:
+            self._save_object_error(
+                f'Received empty spatial data.',
+                harvest_object)
 
         log.debug("DCAT package_dict: {}".format(package_dict))
         log.debug("DCAT dcat_dict: {}".format(dcat_dict))
