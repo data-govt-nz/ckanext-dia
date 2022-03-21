@@ -44,11 +44,21 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
     def _clean_spatial(self, spatial):
         # Convert things like "173.0039,-42.3167,174.2099,-41.0717" to
         # Polygon using templates from CSW
-        if isinstance(spatial, six.string_types) and spatial != "":
-            xmin, ymin, xmax, ymax = spatial.split(',')
-            return self.extent_template.substitute(
-                xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax
-            ).strip()
+        if isinstance(spatial, six.string_types):
+            spatial = spatial.strip()
+            if re.match(r'^([\d\-\.]+\,){3}[\d\-\.]+$', spatial):
+                xmin, ymin, xmax, ymax = spatial.split(',')
+
+                if xmin == xmax:
+                    raise ValueError("Spatial x coordinates are the same.")
+                if ymin == ymax:
+                    raise ValueError("Spatial y coordinates are the same.")
+
+                return self.extent_template.substitute(
+                    xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax
+                ).strip()
+            else:
+                raise ValueError("Invalid spatial data.")
         elif isinstance(spatial, dict):
             return json.dumps(spatial)
         else:
@@ -157,11 +167,16 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                     f'Failed parsing data on {k}:\n{traceback.format_exc()}',
                     harvest_object)
 
-        if dcat_dict.get('spacial') != "":
-            package_dict['spatial'] = self._clean_spatial(dcat_dict['spatial'])
+        if dcat_dict.get('spatial') != "":
+            try:
+                package_dict['spatial'] = self._clean_spatial(dcat_dict['spatial'])
+            except ValueError as e:
+                self._save_object_error(
+                    f'Received invalid spatial data: {e}',
+                    harvest_object)
         else:
             self._save_object_error(
-                f'Got empty spacial data.',
+                f'Received empty spatial data.',
                 harvest_object)
 
         log.debug("DCAT package_dict: {}".format(package_dict))
