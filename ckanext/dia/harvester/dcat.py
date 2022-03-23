@@ -167,17 +167,18 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
                     f'Failed parsing data on {k}:\n{traceback.format_exc()}',
                     harvest_object)
 
-        if dcat_dict.get('spatial') != "":
-            try:
-                package_dict['spatial'] = self._clean_spatial(dcat_dict['spatial'])
-            except ValueError as e:
+        if 'spatial' in dcat_dict:
+            if dcat_dict.get('spatial') != "":
+                try:
+                    package_dict['spatial'] = self._clean_spatial(dcat_dict['spatial'])
+                except ValueError as e:
+                    self._save_object_error(
+                        f'Received invalid spatial data: {e}',
+                        harvest_object)
+            else:
                 self._save_object_error(
-                    f'Received invalid spatial data: {e}',
+                    f'Received empty spatial data.',
                     harvest_object)
-        else:
-            self._save_object_error(
-                f'Received empty spatial data.',
-                harvest_object)
 
         log.debug("DCAT package_dict: {}".format(package_dict))
         log.debug("DCAT dcat_dict: {}".format(dcat_dict))
