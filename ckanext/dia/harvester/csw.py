@@ -5,14 +5,15 @@ import re
 from logging import getLogger
 
 from ckan import model
-import ckan.plugins as plugins
+from ckan import plugins as p
+from ckantoolkit import config
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
 from ckanext.dia.converters import strip_invalid_tags_content
 from pyproj import Proj, transform
 from .clean_frequency import clean_frequency
-from ckan.plugins import toolkit as tk
+from ckan.plugins import toolkit as tk, implements, SingletonPlugin
 
 log = getLogger(__name__)
 
@@ -142,8 +143,52 @@ class DIADocument(MappedXmlDocument):
     ]
 
 
-class DIASpatialHarvester(plugins.SingletonPlugin):
-    plugins.implements(ISpatialHarvester, inherit=True)
+class DIASpatialHarvester(SingletonPlugin):
+    implements(ISpatialHarvester, inherit=True)
+
+    _user_name = None
+
+    def _get_user_name(self):
+        '''
+        Returns the name of the user that will perform the harvesting actions
+        (deleting, updating and creating datasets)
+
+        By default this will be the old 'harvest' user to maintain
+        compatibility. If not present, the internal site admin user will be
+        used. This is the recommended setting, but if necessary it can be
+        overridden with the `ckanext.harvest.user_name` config option:
+
+           ckanext.harvest.user_name = harvest
+
+        '''
+        if self._user_name:
+            return self._user_name
+
+        config_user_name = config.get('ckanext.harvest.user_name')
+        if config_user_name:
+            self._user_name = config_user_name
+            return self._user_name
+
+        context = {'model': model,
+                   'ignore_auth': True,
+                   }
+
+        # Check if 'harvest' user exists and if is a sysadmin
+        try:
+            user_harvest = p.toolkit.get_action('user_show')(
+                context, {'id': 'harvest'})
+            if user_harvest['sysadmin']:
+                self._user_name = 'harvest'
+                return self._user_name
+        except p.toolkit.ObjectNotFound:
+            pass
+
+        context['defer_commit'] = True  # See ckan/ckan#1714
+        self._site_user = p.toolkit.get_action('get_site_user')(context, {})
+        self._user_name = self._site_user['name']
+
+        return self._user_name
+
 
     def get_package_dict(self, context, data_dict):
         package_dict = data_dict['package_dict']
@@ -155,9 +200,11 @@ class DIASpatialHarvester(plugins.SingletonPlugin):
 
         if 'language' in dia_values:
             try:
-                dia_values['language'] = pycountry.languages.get(
+                language = pycountry.languages.get(
                     alpha_3=dia_values['language']
-                ).name
+                )
+                if language:
+                    dia_values['language'] = language.name
             except KeyError:
                 pass
 
