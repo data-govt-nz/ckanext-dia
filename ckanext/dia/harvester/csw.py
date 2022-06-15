@@ -200,9 +200,11 @@ class DIASpatialHarvester(SingletonPlugin):
 
         if 'language' in dia_values:
             try:
-                dia_values['language'] = pycountry.languages.get(
+                language = pycountry.languages.get(
                     alpha_3=dia_values['language']
-                ).name
+                )
+                if language:
+                    dia_values['language'] = language.name
             except KeyError:
                 pass
 
