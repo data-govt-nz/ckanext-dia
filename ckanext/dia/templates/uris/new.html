@@ -1,0 +1,34 @@
+{% extends 'page.html' %}
+{% import 'macros/form.html' as form %}
+
+{% block subtitle %}{{ _('Mint a new URI') }}{% endblock %}
+
+{% block secondary_content %}
+  <section class="module module-narrow module-shallow">
+    <h2 class="module-heading"><i class="fa fa-info-circle"></i> {{ _('URIs for use in linked datasets') }}</h2>
+    <div class="module-content">
+        <p>
+            {% trans %}
+                Some info about what uri minting is and the DIA defined structure
+            {% endtrans %}
+        </p>
+    </div>
+  </section>
+{% endblock %}
+
+{% block primary_content %}
+    <form method="POST">
+        <fieldset>
+            <legend>{{_('Mint a new URI')}}</legend>
+
+            {{ form.input('datatype',
+                label=_("Enter the datatype you want to mint a URI for"),
+                type="text",
+                value="",
+                classes=["control-medium"],
+                attrs={"autocomplete": "off"})
+            }}
+            <button class="btn btn-primary" type="submit">{{_('Submit')}}</button>
+        </fieldset>
+    </form>
+{% endblock %}
