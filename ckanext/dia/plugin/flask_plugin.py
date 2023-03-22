@@ -20,4 +20,4 @@ class DIANoHomepageMixin(p.SingletonPlugin):
     # IBlueprint
 
     def get_blueprint(self):
-        return views.get_blueprints()
+        return views.no_home_page
