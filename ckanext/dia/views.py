@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from logging import getLogger
 from flask import Blueprint, redirect
+
+from ckan.logic import ValidationError
 from ckan.plugins import toolkit as tk
 from ckan.common import _, g, request
-import ckan.lib.base as base
+from ckan.lib import base
+from ckanext.dia.model import MintedURI
 
 log = getLogger(__name__)
 
@@ -24,12 +27,31 @@ def before_request():
 
 @uri_minter.route('/uri/new', methods=['GET', 'POST'])
 def new_uri():
+    vars = {'data': {}, 'errors': {}, 'error_summary': {}}
     if request.method == 'POST':
-        datatype = request.form.get('datatype')
-        identifier = request.form.get('identifier')
+        datatype = request.form.get('type')
+        name = request.form.get('name')
+        vars['data'] = request.form
 
-        log.critical(datatype)
+        try:
+            new_instance = MintedURI.create({
+                'type': datatype,
+                'name': name,
+                'created_by_id': g.userobj.id,
+            })
 
-        return tk.render('uris/success.html')
+            extra_vars = {
+                'uri': new_instance.uri,
+                'name': new_instance.name,
+            }
+            return tk.render('uris/success.html', extra_vars={'c': extra_vars})
+        except ValidationError as e:
+            vars['errors'] = e.error_dict
+            vars['error_summary'] = e.error_summary
+        except Exception as e:
+            log.error('Unknown error: %s', e, stack_info=True)
+            vars['error_summary'] = { 'Error': _('An unknown error occurred') }
 
-    return tk.render('uris/new.html')
+        return tk.render('uris/new.html', extra_vars=vars)
+
+    return tk.render('uris/new.html', extra_vars=vars)

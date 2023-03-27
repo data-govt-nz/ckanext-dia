@@ -18,13 +18,32 @@
 
 {% block primary_content %}
     <form method="POST">
+        {{ form.errors(error_summary) }}
+
         <fieldset>
             <legend>{{_('Mint a new URI')}}</legend>
 
-            {{ form.input('datatype',
-                label=_("Enter the datatype you want to mint a URI for"),
+            {% trans %}
+                URIs are available in the structure:
+            {% endtrans %}
+                <pre>{{ h.url_for('/', locale='default', qualified=true) }}id/[type]/[identifier]</pre>
+            {% trans %}
+                The identifier portion is generated, and the URI is stored with the provided entity name for future reference.
+            {% endtrans %}
+
+            {{ form.input('type',
+                label=_("Type"),
                 type="text",
-                value="",
+                value=data.type,
+                error=errors.type,
+                classes=["control-medium"],
+                attrs={"autocomplete": "off"})
+            }}
+            {{ form.input('name',
+                label=_("Entity name"),
+                type="text",
+                value=data.name,
+                error=errors.name,
                 classes=["control-medium"],
                 attrs={"autocomplete": "off"})
             }}

@@ -21,7 +21,10 @@
         <fieldset>
             <legend>{{_('Success!')}}</legend>
 
-            {{_('Here is your newly minted URI')}}: {{c.}}
+            {{_('Here is your newly minted URI')}}:
+            <br /><pre style="font-size: small;">{{c.uri}}</pre>
+
+            {{_('This has been reserved against the name')}} {{c.name}}
         </fieldset>
     </form>
 {% endblock %}

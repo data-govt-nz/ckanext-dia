@@ -11,6 +11,7 @@ from ckanext.dia.validators import (
     force_lower, natural_num_or_missing
 )
 from ckanext.dia.action import get
+from ckanext.dia.model import define_table
 
 if p.toolkit.check_ckan_version(min_version='2.9.0'):
     from ckanext.dia.plugin.flask_plugin import (
@@ -57,6 +58,8 @@ class DIAUriMintingPlugin(p.SingletonPlugin):
     # IConfigurer
 
     def update_config(self, config):
+        define_table()
+
         tk.add_template_directory(config, '../templates')
 
 
