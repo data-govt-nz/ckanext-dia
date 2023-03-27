@@ -27,7 +27,7 @@ def before_request():
 
 @uri_minter.route('/uri/new', methods=['GET', 'POST'])
 def new_uri():
-    vars = {'data': {}, 'errors': {}, 'error_summary': {}}
+    vars = {'data': None, 'errors': None, 'error_summary': None}
     if request.method == 'POST':
         datatype = request.form.get('type')
         name = request.form.get('name')
@@ -40,18 +40,16 @@ def new_uri():
                 'created_by_id': g.userobj.id,
             })
 
-            extra_vars = {
+            vars['data'] = {
                 'uri': new_instance.uri,
                 'name': new_instance.name,
             }
-            return tk.render('uris/success.html', extra_vars={'c': extra_vars})
+            return tk.render('uris/success.html', extra_vars=vars)
         except ValidationError as e:
             vars['errors'] = e.error_dict
             vars['error_summary'] = e.error_summary
         except Exception as e:
             log.error('Unknown error: %s', e, stack_info=True)
             vars['error_summary'] = { 'Error': _('An unknown error occurred') }
-
-        return tk.render('uris/new.html', extra_vars=vars)
 
     return tk.render('uris/new.html', extra_vars=vars)

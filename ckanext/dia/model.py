@@ -15,9 +15,9 @@ from ckan.lib.navl.dictization_functions import validate
 from ckan.lib.navl.validators import not_empty
 from ckan.logic import ValidationError
 from ckan.logic.validators import Invalid
-from ckan.model import DomainObject, User
+from ckan.logic.converters import remove_whitespace
+from ckan.model import DomainObject
 from ckan.model.meta import metadata, mapper
-from ckan.plugins import toolkit
 from ckan.common import _, config
 
 
@@ -31,7 +31,7 @@ def db_setup():
 
     if not model.package_table.exists():
         log.critical("Exiting: can not migrate minted uri model"
-                           "if the database does not exist yet")
+                     "if the database does not exist yet")
         sys.exit(1)
         return
 
@@ -63,23 +63,33 @@ def define_table():
 
 def default_schema():
     schema = {
-        'type': [not_empty, six.text_type],
-        'name': [not_empty, six.text_type, name_unique],
-        'created_by_id': [not_empty],
+        'type': [not_empty, six.text_type, remove_whitespace],
+        'name': [not_empty, six.text_type, remove_whitespace],
+        'created_by_id': [not_empty, six.text_type, remove_whitespace],
     }
     return schema
 
 
-def name_unique(name, context):
-    type = context.get('type', '')
-    if str(type) == '':
-        raise Invalid(_('Type and Name are both required'))
-    # Validate the name is unique within the type
+def uri_unique(uri, context):
     result = MintedURI.Session.query(MintedURI).\
-        filter_by(type=type, name=name).first()
+        filter_by(uri=uri).first()
     if result:
-        raise Invalid(_('That name is already reserved within the supplied type'))
-    return name
+        raise Invalid(_('That URI is already reserved (same type and name as an existing URI)'))
+    return uri
+
+
+def generate_uri(domain, type, name):
+    namespace = join('id', type.lower())
+    namespace_with_name = join(namespace, name.lower())
+    # [site_url]/id/[type]/[name] is used to generate a consistent uuid5
+    # The same type/name for the same site url should always provide the
+    # same guid
+    guid_url = urljoin(domain, quote(namespace_with_name))
+    guid = str(uuid.uuid5(uuid.NAMESPACE_URL, guid_url))
+
+    # Final uri is [site_url]/id/[type]/[guid]
+    path = quote(join(namespace, guid))
+    return urljoin(domain, path)
 
 
 class MintedURI(DomainObject):
@@ -94,21 +104,26 @@ class MintedURI(DomainObject):
 
         The given `name` should be unique within the `type` (or namespace).
         '''
-
-        validated_data, errors = validate(data_dict, default_schema(), data_dict)
+        # Validate form input data
+        validated_data, errors = validate(data_dict, default_schema())
         if errors:
             raise ValidationError(errors)
 
+        # Generate a URI from the validated data
         type = validated_data.get('type')
         name = validated_data.get('name')
         created_by_id = validated_data.get('created_by_id')
+        domain = config.get('ckan.site_url', '').strip()
 
-        guid = str(uuid.uuid1())
-        path = quote(join('id', type, guid))
-        uri = urljoin(config.get('ckan.site_url', ''), path)
+        uri = generate_uri(domain, type, name)
+
+        # Validate that the URI is unique
+        valid_uri, errors = validate({ 'uri': uri }, { 'uri': [uri_unique]})
+        if errors:
+            raise ValidationError(errors)
 
         model = MintedURI(
-            uri=uri,
+            uri=valid_uri.get('uri'),
             type=type,
             name=name,
             created_by_id=created_by_id,
