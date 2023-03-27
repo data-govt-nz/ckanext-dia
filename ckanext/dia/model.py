@@ -30,8 +30,8 @@ def db_setup():
         define_table()
 
     if not model.package_table.exists():
-        log.critical("Exiting: can not migrate minted uri model \
-if the database does not exist yet")
+        log.critical("Exiting: can not migrate minted uri model"
+                           "if the database does not exist yet")
         sys.exit(1)
         return
 
@@ -39,7 +39,7 @@ if the database does not exist yet")
         minted_uri_table.create()
         print("Created Minted URI table")
     else:
-        print("Minted URI table already exists -- skipping")
+        print("Minted URI table already exists -- skipping creation")
 
 
 def define_table():
