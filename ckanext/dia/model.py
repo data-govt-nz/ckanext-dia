@@ -5,7 +5,8 @@ import datetime
 import logging
 import sys
 import six
-from sqlalchemy import Table, Column, types, ForeignKey
+from sqlalchemy import Table, Column, types, ForeignKey, desc
+from sqlalchemy.sql.expression import or_
 from urllib.parse import urljoin, quote
 from os.path import join
 import uuid
@@ -16,7 +17,7 @@ from ckan.lib.navl.validators import not_empty
 from ckan.logic import ValidationError
 from ckan.logic.validators import Invalid
 from ckan.logic.converters import remove_whitespace
-from ckan.model import DomainObject
+from ckan.model import DomainObject, User
 from ckan.model.meta import metadata, mapper
 from ckan.common import _, config
 
@@ -131,6 +132,30 @@ class MintedURI(DomainObject):
         model.save()
 
         return model
+
+    @classmethod
+    def get_list(cls, data_dict):
+        q = data_dict.get('q', '')
+
+        query = MintedURI.Session.query(MintedURI)\
+            .order_by(desc(MintedURI.created_at))
+
+        if q:
+            query = MintedURI.search(q, query)
+
+        return query
+
+    @classmethod
+    def search(cls, querystr, sqlalchemy_query):
+        '''Search name and type'''
+        query = sqlalchemy_query
+        qstr = '%' + querystr + '%'
+        filters = [
+            cls.name.ilike(qstr),
+            cls.type.ilike(qstr),
+        ]
+        query = query.filter(or_(*filters))
+        return query
 
     def __repr__(self):
         return '<MintedURI uri={} name={}>'\

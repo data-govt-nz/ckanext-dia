@@ -1,0 +1,45 @@
+{% extends "page.html" %}
+
+{% block subtitle %}{{ _('All URIs') }}{% endblock %}
+
+{% block breadcrumb_content %}
+  <li class="active">{{ h.nav_link(_('URIs'), named_route='uri_minter.list') }}</li>
+{% endblock %}
+
+{% block primary_content %}
+  <article class="module">
+    <div class="module-content">
+      {% block page_primary_action %}
+        <div class="page_primary_action">
+          {% link_for _('Mint new URI'), named_route='uri_minter.new_uri', class_='button', icon='plus-square' %}
+        </div>
+      {% endblock %}
+      <h1 class="page-heading">
+        {% block page_heading %}{{ _('URIs') }}{% endblock %}
+      </h1>
+      {% block uri_list %}
+        {% if page.item_count %}
+        <ul class="user-list">
+          {% block uri_list_inner %}
+            {% for uri in page.items %}
+                <li style="margin-bottom: 20px;">
+                    <span style="font-size: smaller;">{{uri['uri']}}</span><br />
+                    Type: {{uri['type']}}, Name: {{uri['name']}}
+                </li>
+            {% endfor %}
+          {% endblock %}
+        </ul>
+        {% else %}
+            No URIs found
+        {% endif %}
+      {% endblock %}
+    </div>
+    {% block page_pagination %}
+      {{ page.pager(q=q, order_by=order_by) }}
+    {% endblock %}
+  </article>
+{% endblock %}
+
+{% block secondary_content %}
+  {% snippet 'uris/snippets/uri_search.html', q=q %}
+{% endblock %}

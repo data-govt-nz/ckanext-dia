@@ -4,8 +4,9 @@ from flask import Blueprint, redirect
 
 from ckan.logic import ValidationError
 from ckan.plugins import toolkit as tk
-from ckan.common import _, g, request
+from ckan.common import _, config, g, request
 from ckan.lib import base
+import ckan.lib.helpers as h
 from ckanext.dia.model import MintedURI
 
 log = getLogger(__name__)
@@ -53,3 +54,24 @@ def new_uri():
             vars['error_summary'] = { 'Error': _('An unknown error occurred') }
 
     return tk.render('uris/new.html', extra_vars=vars)
+
+@uri_minter.route('/uri', methods=['GET'])
+def list():
+    page_number = h.get_page_number(request.params)
+    q = request.params.get(u'q', u'')
+
+    data_dict = {
+        u'q': q,
+    }
+
+    uri_list = MintedURI.get_list(data_dict)
+
+    page = h.Page(
+        collection=uri_list,
+        page=page_number,
+        url=h.pager_url,
+        item_count=uri_list.count(),
+        items_per_page=10)
+
+    extra_vars = {u'page': page, u'q': q}
+    return tk.render(u'uris/list.html', extra_vars)

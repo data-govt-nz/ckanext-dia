@@ -2,6 +2,10 @@
 {% import 'macros/form.html' as form %}
 
 {% block subtitle %}{{ _('Mint a new URI') }}{% endblock %}
+{% block breadcrumb_content %}
+  <li><a href="{{ h.url_for(controller='uri_minter', action='list') }}">{{ _('URIs') }}</a></li>
+  <li class="active"><a href="#">{{ _('Success') }}</a></li>
+{% endblock %}
 
 {% block secondary_content %}
   <section class="module module-narrow module-shallow">
@@ -9,7 +13,7 @@
     <div class="module-content">
         <p>
             {% trans %}
-                Some info about what uri minting is and the DIA defined structure
+                Uniform Resource Identifiers (URIs) may be minted to represent new entities in linked datasets.
             {% endtrans %}
         </p>
     </div>
@@ -21,10 +25,10 @@
         <fieldset>
             <legend>{{_('Success!')}}</legend>
 
-            {{_('Here is your newly minted URI')}}:
-            <br /><pre style="font-size: small;">{{data.uri}}</pre>
+            <p>{{_('Here is your newly minted URI')}}:
+            <br /><strong>{{data.uri}}</strong></p>
 
-            {{_('This has been reserved against the name')}} {{data.name}}
+            <p>{{_('This has been reserved against the name')}} {{data.name}}</p>
         </fieldset>
     </form>
 {% endblock %}
