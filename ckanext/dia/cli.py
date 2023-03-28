@@ -1,6 +1,6 @@
 # encoding: utf-8
 import click
-import ckanext.dia.utils as utils
+from ckanext.dia import utils, model
 
 
 def get_commands():
@@ -15,7 +15,13 @@ def dia():
 @dia.command()
 def cleanup_datastore():
     """
-    Cleans datastore by deleting datastore resource tables
-    that are no longer referenced by datasets
+    Cleans datastore by deleting orphaned datastore resource tables
     """
     return utils.cleanup_datastore()
+
+@dia.command()
+def init_minted_uri_db():
+    """
+    Create the db table for storing minted URIs
+    """
+    return model.db_setup()

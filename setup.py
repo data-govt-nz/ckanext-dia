@@ -32,6 +32,7 @@ setup(
     diadcatjsonharvester=ckanext.dia.harvester.dcat:DIADCATJSONHarvester
     dianohomepage=ckanext.dia.plugin:DIANoHomepagePlugin
     diacommands=ckanext.dia.plugin:DIACommandsPlugin
+    diauriminting=ckanext.dia.plugin:DIAUriMintingPlugin
 
     [paste.paster_command]
     admin=ckanext.dia.commands:AdminCommand

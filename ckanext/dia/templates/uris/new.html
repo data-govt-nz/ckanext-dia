@@ -1,0 +1,57 @@
+{% extends 'page.html' %}
+{% import 'macros/form.html' as form %}
+
+{% block subtitle %}{{ _('Mint a new URI') }}{% endblock %}
+{% block breadcrumb_content %}
+  <li><a href="{{ h.url_for(controller='uri_minter', action='list') }}">{{ _('URIs') }}</a></li>
+  <li class="active"><a href="#">{{ _('New') }}</a></li>
+{% endblock %}
+
+{% block secondary_content %}
+  <section class="module module-narrow module-shallow">
+    <h2 class="module-heading"><i class="fa fa-info-circle"></i> {{ _('URIs for use in linked datasets') }}</h2>
+    <div class="module-content">
+        <p>
+            {% trans %}
+                Uniform Resource Identifiers (URIs) may be minted to represent new entities in linked datasets.
+            {% endtrans %}
+        </p>
+    </div>
+  </section>
+{% endblock %}
+
+{% block primary_content %}
+    <form method="POST">
+        {{ form.errors(error_summary) }}
+
+        <fieldset>
+            <legend>{{_('Mint a new URI')}}</legend>
+
+            <p>{% trans %}
+                URIs are available in the structure:
+            {% endtrans %}
+                <strong>{{ h.url_for('/', locale='default', qualified=true) }}id/[type]/[identifier]</strong><br /><br />
+            {% trans %}
+                The identifier portion is generated, and the URI is stored with the provided entity name for future reference.
+            {% endtrans %}</p>
+
+            {{ form.input('type',
+                label=_("Type"),
+                type="text",
+                value=data.type,
+                error=errors.type,
+                classes=["control-medium"],
+                attrs={"autocomplete": "off"})
+            }}
+            {{ form.input('name',
+                label=_("Entity name"),
+                type="text",
+                value=data.name,
+                error=errors.name,
+                classes=["control-medium"],
+                attrs={"autocomplete": "off"})
+            }}
+            <button class="btn btn-primary" type="submit">{{_('Submit')}}</button>
+        </fieldset>
+    </form>
+{% endblock %}
