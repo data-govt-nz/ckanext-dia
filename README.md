@@ -46,9 +46,11 @@ plugins are:
 - `diadcatjsonharvester` -- Overrides for the DCAT JSON harvester, needs to be enabled instead of `dcat_json_harvester`
 - `dianohomepage` -- Redirect the CKAN homepage to `/dataset`
 - `diacommands` -- Provides cli commands (only needed on ckan >= 2.9)
+- `diauriminting` -- Provides a new data model, listing view and creation form to mint URIs for entities in linked datasets. Only supported in CKAN 2.9+ (No pylons/paster support)
 
 ## Commands
 
+### Cleanup datastore
 This extension currently provides a cli command to clean up the datastore database.
 Resources are not deleted when re-harvesting. This command deletes the old resources that
 are no longer referenced.
@@ -68,3 +70,9 @@ resource_revision and resource_view.
 It also failed on the first run to delete some resources but they were deleted on subsequent runs.
 
 Thanks @opendata-swiss who wrote the command at https://github.com/opendata-swiss/ckanext-switzerland
+
+### Initialise database for minting URIs
+A one off migration command to create the database table needed to store the minted URIs. Only available in CKAN 2.9+.
+```bash
+ckan -c /PATH_TO_YOUR_INI_FILE/FILENAME.ini dia init-minted-uri-db
+```
