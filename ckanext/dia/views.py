@@ -32,7 +32,7 @@ def before_request():
         base.abort(403, _(u'Not authorized to see this page'))
 
 
-@uri_minter.route('/uri/new', methods=['GET', 'POST'])
+@uri_minter.route('/uri/new/', methods=['GET', 'POST'])
 def new_uri():
     vars = {'data': None, 'errors': None, 'error_summary': None}
     if request.method == 'POST':
@@ -61,7 +61,7 @@ def new_uri():
 
     return tk.render('uris/new.html', extra_vars=vars)
 
-@uri_minter.route('/uri', methods=['GET'])
+@uri_minter.route('/uri/', methods=['GET'])
 def list():
     page_number = h.get_page_number(request.params)
     q = request.params.get(u'q', u'')
@@ -82,7 +82,7 @@ def list():
     extra_vars = {u'page': page, u'q': q}
     return tk.render(u'uris/list.html', extra_vars)
 
-@uri_minter.route('/uri/<int:uri_id>', methods=['GET', 'POST'])
+@uri_minter.route('/uri/<int:uri_id>/', methods=['GET', 'POST'])
 def edit_uri(uri_id):
     current_uri = MintedURI.get(uri_id)
     if not current_uri:

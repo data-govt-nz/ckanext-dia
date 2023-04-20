@@ -37,7 +37,7 @@
                         <span class='dataset-date-updated'>Updated {{ h.render_datetime(uri['updated_at']) }}</span>
                         {% endif %}
                         {% if is_admin %}
-                          {% link_for _('Edit'), named_route='uri_minter.edit_uri', uri_id=uri['id'] %}
+                          - {% link_for _('Edit'), named_route='uri_minter.edit_uri', uri_id=uri['id'] %}
                         {% endif %}
                       </span>
                     </dd>
