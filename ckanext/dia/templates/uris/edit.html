@@ -1,0 +1,60 @@
+{% extends 'page.html' %}
+{% import 'macros/form.html' as form %}
+
+{% block subtitle %}{{ _('Update URI') }}{% endblock %}
+{% block breadcrumb_content %}
+  <li><a href="{{ h.url_for(controller='uri_minter', action='list') }}">{{ _('URIs') }}</a></li>
+  <li class="active"><a href="#">{{ _('New') }}</a></li>
+{% endblock %}
+
+{% block secondary_content %}
+  <section class="module module-narrow module-shallow">
+    <h2 class="module-heading"><i class="fa fa-info-circle"></i> {{ _('URIs for use in linked datasets') }}</h2>
+    <div class="module-content">
+        <p>
+            {% trans %}
+                Uniform Resource Identifiers (URIs) may be minted to represent new entities in linked datasets.
+            {% endtrans %}
+        </p>
+    </div>
+  </section>
+{% endblock %}
+
+{% block primary_content %}
+    <form method="POST">
+        {{ form.errors(error_summary) }}
+
+        <fieldset>
+            <legend>{{_('Update URI')}}</legend>
+
+            <p>
+            {% trans %}
+                If the entity that this URI represents is changing it's remit or purpose but retaining it's name, you can generate a new URI.
+                Otherwise, if the name of the entity is changing, you can update the name.
+            {% endtrans %}
+            </p>
+            {{ form.checkbox('regenerate',
+                label=_("Regenerate URI?"),
+                checked=data.regenerate)
+            }}
+
+            {{ form.input('type',
+                label=_("Type"),
+                type="text",
+                value=data.type,
+                error=errors.type,
+                classes=["control-medium"],
+                attrs={"autocomplete": "off", "disabled": "disabled"})
+            }}
+            {{ form.input('name',
+                label=_("Entity name"),
+                type="text",
+                value=data.name,
+                error=errors.name,
+                classes=["control-medium"],
+                attrs={"autocomplete": "off"})
+            }}
+            <button class="btn btn-primary" type="submit">{{_('Submit')}}</button>
+        </fieldset>
+    </form>
+{% endblock %}
