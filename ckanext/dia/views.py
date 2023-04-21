@@ -87,6 +87,8 @@ def edit_uri(uri_id):
     current_uri = MintedURI.get(uri_id)
     if not current_uri:
         base.abort(404, 'URI not found')
+    if current_uri.superseded_by != None:
+        base.aport(422, 'URI is archived, editing not supported')
 
     data = {'type': current_uri.type, 'name': current_uri.name}
     vars = {'data': data, 'errors': None, 'error_summary': None, 'update': True}

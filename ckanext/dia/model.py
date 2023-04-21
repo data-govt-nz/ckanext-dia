@@ -56,7 +56,8 @@ def define_table():
         Column('created_by_id', types.UnicodeText, ForeignKey('user.id')),
         Column('created_at', types.DateTime, default=datetime.datetime.utcnow),
         Column('updated_by_id', types.UnicodeText, ForeignKey('user.id')),
-        Column('updated_at', types.DateTime))
+        Column('updated_at', types.DateTime),
+        Column('superseded_by', types.Integer))
     mapper(
         MintedURI,
         minted_uri_table
@@ -65,10 +66,11 @@ def define_table():
 
 def name_and_type_unique(name, context):
     type = context.get('type')
-    result = MintedURI.Session.query(MintedURI).\
-        filter(func.lower(MintedURI.name)==name.lower()).\
-        filter(func.lower(MintedURI.type)==type.lower()).\
-        first()
+    result = MintedURI.Session.query(MintedURI)\
+        .filter(func.lower(MintedURI.name) == name.lower())\
+        .filter(func.lower(MintedURI.type) == type.lower())\
+        .filter(MintedURI.superseded_by == None)\
+        .first()
     if result:
         raise Invalid(_('That URI is already reserved (same type and name as an existing URI)'))
     return name
@@ -117,6 +119,12 @@ def generate_uri(type):
 
     # Final uri is [site_url]/id/[type]/[guid]
     return urljoin(domain, path_section)
+
+
+def set_updated_props(model, updated_by_id):
+    model.updated_by_id = updated_by_id
+    model.updated_at = datetime.datetime.utcnow()
+    return model
 
 
 class MintedURI(DomainObject):
@@ -185,20 +193,37 @@ class MintedURI(DomainObject):
         if errors:
             raise ValidationError(errors)
 
+        type = validated_data.get('type')
+        name = validated_data.get('name')
+        updated_by_id = validated_data.get('updated_by_id')
+
         if regenerating:
-            uri = generate_uri(validated_data.get('type'))
-            # Validate that the URI is unique
+            # Validate that the new URI is unique
+            uri = generate_uri(type)
             valid_uri, errors = validate({ 'uri': uri }, { 'uri': [uri_unique]})
             if errors:
                 raise ValidationError(errors)
 
-            model.uri = valid_uri.get('uri')
-        else:
-            model.name = validated_data.get('name')
+            # Create a new minted URI with the same type and name
+            new_model = MintedURI(
+                uri=valid_uri.get('uri'),
+                type=type,
+                name=name,
+                created_by_id=updated_by_id,
+            )
+            new_model.save()
 
-        model.updated_by_id = validated_data.get('updated_by_id')
-        model.updated_at = datetime.datetime.utcnow()
+            # Mark original URI as superseded by the new one
+            # so that we can trace the links between them if needed
+            model.superseded_by = new_model.id
+            model = set_updated_props(model, updated_by_id)
+            model.save()
 
+            return new_model
+
+        # Only updating the name on the URI
+        model.name = name
+        model = set_updated_props(model, updated_by_id)
         model.save()
 
         return model
@@ -208,6 +233,7 @@ class MintedURI(DomainObject):
         q = data_dict.get('q', '')
 
         query = MintedURI.Session.query(MintedURI)\
+            .filter(MintedURI.superseded_by == None)\
             .order_by(desc(MintedURI.created_at))
 
         if q:
