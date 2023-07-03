@@ -2,6 +2,8 @@
 
 {% block subtitle %}{{ _('All URIs') }}{% endblock %}
 
+{% set is_admin = g.userobj.sysadmin %}
+
 {% block breadcrumb_content %}
   <li class="active">{{ h.nav_link(_('URIs'), named_route='uri_minter.list') }}</li>
 {% endblock %}
@@ -19,16 +21,31 @@
       </h1>
       {% block uri_list %}
         {% if page.item_count %}
-        <ul class="user-list">
+        <dl>
           {% block uri_list_inner %}
             {% for uri in page.items %}
-                <li style="margin-bottom: 20px;">
-                    <span style="font-size: smaller;">{{uri['uri']}}</span><br />
-                    Type: {{uri['type']}}, Name: {{uri['name']}}
-                </li>
+                <dd style="margin-bottom: 20px;">
+                  <dl>
+                    <dd><span>{{uri['uri']}}</span></dd>
+                    <dd>Type: {{uri['type']}}</dd>
+                    <dd>Name: {{uri['name']}}</dd>
+                    <dd>
+                      <span class='dataset-subheading'>
+                        <span class='dataset-date-created'>Created {{ h.render_datetime(uri['created_at']) }}</span>
+                        {% if uri['updated_at'] %}
+                        <span class='dataset-date-separator'>&bull;</span>
+                        <span class='dataset-date-updated'>Updated {{ h.render_datetime(uri['updated_at']) }}</span>
+                        {% endif %}
+                        {% if is_admin %}
+                          - {% link_for _('Edit'), named_route='uri_minter.edit_uri', uri_id=uri['id'] %}
+                        {% endif %}
+                      </span>
+                    </dd>
+                  </dl>
+                </dd>
             {% endfor %}
           {% endblock %}
-        </ul>
+        </dl>
         {% else %}
             No URIs found
         {% endif %}

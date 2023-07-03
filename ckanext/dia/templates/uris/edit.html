@@ -1,10 +1,10 @@
 {% extends 'page.html' %}
 {% import 'macros/form.html' as form %}
 
-{% block subtitle %}{{ _('Mint a new URI') }}{% endblock %}
+{% block subtitle %}{{ _('Update URI') }}{% endblock %}
 {% block breadcrumb_content %}
   <li><a href="{{ h.url_for(controller='uri_minter', action='list') }}">{{ _('URIs') }}</a></li>
-  <li class="active"><a href="#">{{ _('New') }}</a></li>
+  <li class="active"><a href="#">{{ _('Edit') }}</a></li>
 {% endblock %}
 
 {% block secondary_content %}
@@ -25,24 +25,16 @@
         {{ form.errors(error_summary) }}
 
         <fieldset>
-            <legend>{{_('Mint a new URI')}}</legend>
-
-            <p>{% trans %}
-                URIs are available in the structure:
-            {% endtrans %}
-                <strong>{{ h.url_for('/', locale='default', qualified=true) }}id/[type]/[identifier]</strong><br /><br />
-            {% trans %}
-                The identifier portion is generated, and the URI is stored with the provided entity name for future reference.
-            {% endtrans %}</p>
-
+            <legend>{{_('Update URI')}}</legend>
             {{ form.input('type',
                 label=_("Type"),
                 type="text",
                 value=data.type,
                 error=errors.type,
                 classes=["control-medium"],
-                attrs={"autocomplete": "off"})
+                attrs={"autocomplete": "off", "disabled": "disabled"})
             }}
+
             {{ form.input('name',
                 label=_("Entity name"),
                 type="text",
@@ -51,6 +43,14 @@
                 classes=["control-medium"],
                 attrs={"autocomplete": "off"})
             }}
+
+            {{ form.info(_('Only tick this box if the entity that this URI represents is changing its remit or purpose.'), classes=['info-help-tight', 'small', 'bold']) }}
+            {{ form.checkbox('regenerate',
+                label=_("Regenerate URI?"),
+                checked=data.regenerate,
+                classes=[""])
+            }}
+
         </fieldset>
         <div class="form-actions">
             <a class="btn" href="/uri/">{{_('Cancel')}}</a>

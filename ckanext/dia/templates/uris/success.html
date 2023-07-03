@@ -3,8 +3,8 @@
 
 {% block subtitle %}{{ _('Mint a new URI') }}{% endblock %}
 {% block breadcrumb_content %}
-  <li><a href="{{ h.url_for(controller='uri_minter', action='list') }}">{{ _('URIs') }}</a></li>
-  <li class="active"><a href="#">{{ _('Success') }}</a></li>
+    <li><a href="{{ h.url_for(controller='uri_minter', action='list') }}">{{ _('URIs') }}</a></li>
+    <li class="active"><a href="#">{{ _('Success') }}</a></li>
 {% endblock %}
 
 {% block secondary_content %}
@@ -21,14 +21,19 @@
 {% endblock %}
 
 {% block primary_content %}
-    <form method="POST">
-        <fieldset>
-            <legend>{{_('Success!')}}</legend>
+    <legend>{{_('Success!')}}</legend>
 
-            <p>{{_('Here is your newly minted URI')}}:
-            <br /><strong>{{data.uri}}</strong></p>
+    <p>
+        {% if update %}
+            {{_('Here is your updated URI')}}:
+        {% else %}
+            {{_('Here is your newly minted URI')}}:
+        {% endif %}
+    <br /><strong>{{data.uri}}</strong></p>
 
-            <p>{{_('This has been reserved against the name')}} {{data.name}}</p>
-        </fieldset>
-    </form>
+    <p>{{_('This has been reserved against the name')}} "{{data.name}}"</p>
+
+    <div class="form-actions">
+        <a class="btn btn-primary" href="/uri/">{{_('Back to URI listing')}}</a>
+    </div>
 {% endblock %}
