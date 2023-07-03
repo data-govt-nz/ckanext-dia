@@ -26,18 +26,6 @@
 
         <fieldset>
             <legend>{{_('Update URI')}}</legend>
-
-            <p>
-            {% trans %}
-                If the entity that this URI represents is changing it's remit or purpose but retaining it's name, you can generate a new URI.
-                Otherwise, if the name of the entity is changing, you can update the name.
-            {% endtrans %}
-            </p>
-            {{ form.checkbox('regenerate',
-                label=_("Regenerate URI?"),
-                checked=data.regenerate)
-            }}
-
             {{ form.input('type',
                 label=_("Type"),
                 type="text",
@@ -46,6 +34,7 @@
                 classes=["control-medium"],
                 attrs={"autocomplete": "off", "disabled": "disabled"})
             }}
+
             {{ form.input('name',
                 label=_("Entity name"),
                 type="text",
@@ -54,7 +43,18 @@
                 classes=["control-medium"],
                 attrs={"autocomplete": "off"})
             }}
-            <button class="btn btn-primary" type="submit">{{_('Submit')}}</button>
+
+            {{ form.info(_('Only tick this box if the entity that this URI represents is changing its remit or purpose.'), classes=['info-help-tight', 'small', 'bold']) }}
+            {{ form.checkbox('regenerate',
+                label=_("Regenerate URI?"),
+                checked=data.regenerate,
+                classes=[""])
+            }}
+
         </fieldset>
+        <div class="form-actions">
+            <a class="btn" href="/uri/">{{_('Cancel')}}</a>
+            <button class="btn btn-primary" type="submit">{{_('Submit')}}</button>
+        </div>
     </form>
 {% endblock %}
