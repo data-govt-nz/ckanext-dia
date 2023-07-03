@@ -66,10 +66,12 @@ def define_table():
 
 def name_and_type_unique(name, context):
     type = context.get('type')
+    model_id = context.get('id', 0)
     result = MintedURI.Session.query(MintedURI)\
         .filter(func.lower(MintedURI.name) == name.lower())\
         .filter(func.lower(MintedURI.type) == type.lower())\
         .filter(MintedURI.superseded_by == None)\
+        .filter(MintedURI.id != int(model_id))\
         .first()
     if result:
         raise Invalid(_('That URI is already reserved (same type and name as an existing URI)'))
@@ -100,14 +102,12 @@ def default_schema():
     return schema
 
 
-def update_schema(regenerating):
+def update_schema():
     schema = {
         'type': [no_type_change],
-        'name': [not_empty, six.text_type, remove_whitespace],
+        'name': [not_empty, six.text_type, remove_whitespace, name_and_type_unique],
         'updated_by_id': [not_empty, six.text_type, remove_whitespace],
     }
-    if not regenerating:
-        schema['name'].append(name_and_type_unique)
     return schema
 
 
@@ -185,11 +185,11 @@ class MintedURI(DomainObject):
         The given `name` should be unique within the `type` (or namespace).
         '''
         model = MintedURI.get(uri_id)
-        context = { 'name': model.name, 'type': model.type }
+        context = { 'name': model.name, 'type': model.type, 'id': uri_id }
         regenerating = data_dict.get('regenerate', False)
 
         # Validate form input data
-        validated_data, errors = validate(data_dict, update_schema(regenerating), context)
+        validated_data, errors = validate(data_dict, update_schema(), context)
         if errors:
             raise ValidationError(errors)
 
