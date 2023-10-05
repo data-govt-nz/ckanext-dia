@@ -5,8 +5,10 @@ import itertools
 import time
 import ckan.logic as logic
 import ckan.model as model
+from ckan.common import config
+from ckan.model import Session, User, ApiToken
 
-logger = logging.getLogger('ckan.logic')
+logger = logging.getLogger(__name__)
 
 
 def cleanup_datastore():

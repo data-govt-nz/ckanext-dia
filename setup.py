@@ -27,7 +27,6 @@ setup(
     [ckan.plugins]
     diavalidation=ckanext.dia.plugin:DIAValidationPlugin
     diaschema=ckanext.dia.plugin:DIASchemaPlugin
-    diaactions=ckanext.dia.plugin:DIAActionsPlugin
     diaharvester=ckanext.dia.harvester.csw:DIASpatialHarvester
     diadcatjsonharvester=ckanext.dia.harvester.dcat:DIADCATJSONHarvester
     dianohomepage=ckanext.dia.plugin:DIANoHomepagePlugin

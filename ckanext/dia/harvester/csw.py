@@ -8,7 +8,7 @@ from ckan import model
 from ckan import plugins as p
 from ckantoolkit import config
 from ckanext.spatial.interfaces import ISpatialHarvester
-from ckanext.spatial.model import MappedXmlDocument, ISOElement, ISODataFormat
+from ckanext.spatial.harvested_metadata import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
 from ckanext.dia.converters import strip_invalid_tags_content
 from pyproj import Proj, transform

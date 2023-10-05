@@ -31,8 +31,8 @@ def db_setup():
         define_table()
 
     if not model.package_table.exists():
-        log.critical("Exiting: can not migrate minted uri model"
-                     "if the database does not exist yet")
+        log.critical("Exiting: can not migrate minted uri model\
+                      if the database does not exist yet")
         sys.exit(1)
         return
 
@@ -93,11 +93,15 @@ def no_type_change(type, context):
     return type
 
 
+def ensure_str(val):
+    return six.text_type(val)
+
+
 def default_schema():
     schema = {
-        'type': [not_empty, six.text_type, remove_whitespace],
-        'name': [not_empty, six.text_type, remove_whitespace, name_and_type_unique],
-        'created_by_id': [not_empty, six.text_type, remove_whitespace],
+        'type': [not_empty, ensure_str, remove_whitespace],
+        'name': [not_empty, ensure_str, remove_whitespace, name_and_type_unique],
+        'created_by_id': [not_empty, ensure_str, remove_whitespace],
     }
     return schema
 
@@ -105,8 +109,8 @@ def default_schema():
 def update_schema():
     schema = {
         'type': [no_type_change],
-        'name': [not_empty, six.text_type, remove_whitespace, name_and_type_unique],
-        'updated_by_id': [not_empty, six.text_type, remove_whitespace],
+        'name': [not_empty, ensure_str, remove_whitespace, name_and_type_unique],
+        'updated_by_id': [not_empty, ensure_str, remove_whitespace],
     }
     return schema
 
