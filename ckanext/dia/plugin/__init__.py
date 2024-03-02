@@ -10,7 +10,6 @@ from ckanext.dia.validators import (
     isodate, extra_key_not_in_root_schema,
     force_lower, natural_num_or_missing
 )
-from ckanext.dia.action import get
 from ckanext.dia.model import define_table
 
 if p.toolkit.check_ckan_version(min_version='2.9.0'):
@@ -61,13 +60,6 @@ class DIAUriMintingPlugin(p.SingletonPlugin):
         define_table()
 
         tk.add_template_directory(config, '../templates')
-
-
-class DIAActionsPlugin(p.SingletonPlugin):
-    p.implements(p.IActions)
-
-    def get_actions(self):
-        return {'package_show': get.package_show}
 
 
 class DIANoHomepagePlugin(DIANoHomepageMixin, p.SingletonPlugin):

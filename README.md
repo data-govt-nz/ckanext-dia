@@ -29,7 +29,7 @@ You can also install the specific dependencies using the appropriate requirement
 When working on the dcat.json or CSW harvesting extensions you often need to load testing data, you can use the following paster command to re-harvest an existing dataset:
 
 ```shell
-docker-compose run --service-ports ckan-fetch ckan-paster --plugin=ckanext-harvest harvester import -p 'reefton-goldfield-sheet-12-part-of-waitahu-survey-district-and-pohaturoa-survey-district-field-1'
+docker compose run ckan-fetch ckan harvester import -p 'reefton-goldfield-sheet-12-part-of-waitahu-survey-district-and-pohaturoa-survey-district-field-1'
 ```
 
 where `reefton-goldfield...` is the dataset id in the url, this may also look like a guid, both will work.
@@ -41,7 +41,6 @@ plugins are:
 
 - `diavalidation` -- Exposes extra validators, such as `natural_num_or_missing`
 - `diaschema` -- DIA-related changes to CKAN schema
-- `diaactions` -- Disables the use of caching for showing packages
 - `diaharvester` -- Overrides for the CSW harvester, needs to be enabled before `csw_harvester`
 - `diadcatjsonharvester` -- Overrides for the DCAT JSON harvester, needs to be enabled instead of `dcat_json_harvester`
 - `dianohomepage` -- Redirect the CKAN homepage to `/dataset`
