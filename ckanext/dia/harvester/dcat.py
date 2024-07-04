@@ -10,9 +10,11 @@ from urllib.parse import urlparse
 import requests
 
 from ckan import model
+import ckan.plugins as p
 import ckan.plugins.toolkit as tk
 from ckan.logic.action.get import license_list
 from ckanext.dcat.harvesters import DCATJSONHarvester
+from ckanext.dcat.interfaces import IDCATRDFHarvester
 from ckanext.dia.converters import strip_invalid_tags_content
 from ckanext.dia.harvester.clean_frequency import clean_frequency
 
@@ -20,6 +22,7 @@ log = getLogger(__name__)
 
 
 class DIADCATJSONHarvester(DCATJSONHarvester):
+    p.implements(IDCATRDFHarvester, inherit=True)
 
     extent_template = Template('''
         {
@@ -35,6 +38,11 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
             ]
         }
     ''')
+
+    # IDCATRDFHarvester
+    def update_session(self, session):
+        session.headers.update({'X-Harvest': 'data.govt.nz/dcat-json'})
+        return session
 
     def _clean_email(self, email):
         if email.startswith("mailto:"):
