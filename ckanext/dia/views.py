@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from logging import getLogger
-from flask import Blueprint, redirect
+import sqlalchemy
+import datetime
+import json
+from flask import Blueprint, redirect, make_response
 
 from ckan.logic import ValidationError
 from ckan.plugins import toolkit as tk
@@ -8,10 +11,13 @@ from ckan.common import _, g, request
 from ckan.lib import base
 from ckan import authz
 import ckan.lib.helpers as h
+import ckan.lib.dictization.model_dictize as model_dictize
+import ckan.model as model
 from ckanext.dia.model import MintedURI
 
 log = getLogger(__name__)
 
+_and_ = sqlalchemy.and_
 
 no_home_page = Blueprint("no_home_page", __name__)
 
@@ -88,7 +94,7 @@ def edit_uri(uri_id):
     if not current_uri:
         base.abort(404, 'URI not found')
     if current_uri.superseded_by != None:
-        base.aport(422, 'URI is archived, editing not supported')
+        base.abort(422, 'URI is archived, editing not supported')
 
     data = {'type': current_uri.type, 'name': current_uri.name}
     vars = {'data': data, 'errors': None, 'error_summary': None, 'update': True}
@@ -121,3 +127,27 @@ def edit_uri(uri_id):
             vars['error_summary'] = { 'Error': _('An unknown error occurred') }
 
     return tk.render('uris/edit.html', extra_vars=vars)
+
+
+api = Blueprint(u'dia-api', __name__, url_prefix=u'/dia-api')
+
+@api.route('/datapusher-health', methods=['GET', 'POST'])
+def datapusher_health():
+    a_day_ago = datetime.datetime.now() - datetime.timedelta(days=1)
+
+    query = model.Session.query(model.TaskStatus)\
+        .filter(_and_(
+            model.TaskStatus.state == 'error',
+            model.TaskStatus.task_type == 'datapusher',
+            model.TaskStatus.last_updated > a_day_ago
+        ))
+
+    headers = {"Content-Type": "application/json;charset=utf-8"}
+
+    if query.count() > 0:
+        data = [model_dictize.task_status_dictize(ts, {'task_status': ts}) for ts in query.all()]
+        response_msg = json.dumps(data)
+        return make_response((response_msg, 500, headers))
+
+    response_msg = json.dumps({})
+    return make_response((response_msg, 200, headers))

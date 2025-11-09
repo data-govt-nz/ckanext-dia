@@ -62,6 +62,15 @@ class DIAUriMintingPlugin(p.SingletonPlugin):
         tk.add_template_directory(config, '../templates')
 
 
+class DIAAPIPlugin(p.SingletonPlugin):
+    p.implements(p.IBlueprint)
+
+    # IBlueprint
+
+    def get_blueprint(self):
+        return views.api
+
+
 class DIANoHomepagePlugin(DIANoHomepageMixin, p.SingletonPlugin):
     """
     Redirect / to /dataset
