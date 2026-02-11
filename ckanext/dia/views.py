@@ -129,7 +129,7 @@ def edit_uri(uri_id):
     return tk.render('uris/edit.html', extra_vars=vars)
 
 
-api = Blueprint(u'dia-api', __name__, url_prefix=u'/dia-api')
+api = Blueprint(u'dia-api', __name__, url_prefix=u'/api')
 
 @api.route('/datapusher-health', methods=['GET', 'POST'])
 def datapusher_health():
@@ -144,10 +144,17 @@ def datapusher_health():
 
     headers = {"Content-Type": "application/json;charset=utf-8"}
 
-    if query.count() > 0:
+    error_count = query.count()
+
+    if error_count > 0:
         data = [model_dictize.task_status_dictize(ts, {'task_status': ts}) for ts in query.all()]
-        response_msg = json.dumps(data)
-        return make_response((response_msg, 500, headers))
+        response_msg = json.dumps({
+            "error": {
+                "message": f"{error_count} datapusher tasks errored in the last day",
+                "detail": data
+            }
+        })
+        return make_response((response_msg, 503, headers))
 
     response_msg = json.dumps({})
     return make_response((response_msg, 200, headers))
