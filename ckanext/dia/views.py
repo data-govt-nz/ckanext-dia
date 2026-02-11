@@ -3,6 +3,7 @@ from logging import getLogger
 import sqlalchemy
 import datetime
 import json
+import os
 from flask import Blueprint, redirect, make_response
 
 from ckan.logic import ValidationError
@@ -131,7 +132,7 @@ def edit_uri(uri_id):
 
 api = Blueprint(u'dia-api', __name__, url_prefix=u'/api')
 
-@api.route('/datapusher-health', methods=['GET', 'POST'])
+@api.route('/health/datapusher', methods=['GET', 'POST'])
 def datapusher_health():
     a_day_ago = datetime.datetime.now() - datetime.timedelta(days=1)
 
@@ -156,5 +157,16 @@ def datapusher_health():
         })
         return make_response((response_msg, 503, headers))
 
-    response_msg = json.dumps({})
+    response_msg = json.dumps({"success": {"message": "No datapusher errors in the last day"}})
     return make_response((response_msg, 200, headers))
+
+@api.route('/health/efs', methods=['GET'])
+def efs_health():
+    headers = {"Content-Type": "application/json;charset=utf-8"}
+
+    if os.path.exists('/var/lib/ckan/.efs/file'):
+        response_msg = json.dumps({"success": {"message": "EFS mounted"}})
+        return make_response((response_msg, 200, headers))
+
+    response_msg = json.dumps({"error": {"message": "EFS not mounted"}})
+    return make_response((response_msg, 503, headers))
