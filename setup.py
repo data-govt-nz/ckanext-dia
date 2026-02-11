@@ -32,6 +32,7 @@ setup(
     dianohomepage=ckanext.dia.plugin:DIANoHomepagePlugin
     diacommands=ckanext.dia.plugin:DIACommandsPlugin
     diauriminting=ckanext.dia.plugin:DIAUriMintingPlugin
+    diaapi=ckanext.dia.plugin:DIAAPIPlugin
 
     [paste.paster_command]
     admin=ckanext.dia.commands:AdminCommand
