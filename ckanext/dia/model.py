@@ -5,7 +5,7 @@ import datetime
 import logging
 import sys
 import six
-from sqlalchemy import Table, Column, types, ForeignKey, desc, func
+from sqlalchemy import Table, Column, types, ForeignKey, desc, func, inspect
 from sqlalchemy.sql.expression import or_
 from urllib.parse import urljoin, quote
 from os import path
@@ -30,14 +30,17 @@ def db_setup():
     if minted_uri_table is None:
         define_table()
 
-    if not model.package_table.exists():
-        log.critical("Exiting: can not migrate minted uri model\
-                      if the database does not exist yet")
+    db_engine = model.meta.engine
+    inspector = inspect(db_engine)
+
+    if not inspector.has_table('package'):
+        log.critical("Exiting: can not migrate minted uri model "
+                     "if the database does not exist yet")
         sys.exit(1)
         return
 
-    if not minted_uri_table.exists():
-        minted_uri_table.create()
+    if not inspector.has_table('minted_uri'):
+        minted_uri_table.create(bind=db_engine)
         print("Created Minted URI table")
     else:
         print("Minted URI table already exists -- skipping creation")

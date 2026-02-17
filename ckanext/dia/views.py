@@ -164,7 +164,8 @@ def datapusher_health():
 def efs_health():
     headers = {"Content-Type": "application/json;charset=utf-8"}
 
-    if os.path.exists('/var/lib/ckan/.efs/file'):
+    storage_path = tk.config.get('ckan.storage_path', '/var/lib/ckan')
+    if os.path.exists(os.path.join(storage_path, '.efs', 'file')):
         response_msg = json.dumps({"success": {"message": "EFS mounted"}})
         return make_response((response_msg, 200, headers))
 
