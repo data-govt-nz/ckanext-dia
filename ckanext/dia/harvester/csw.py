@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-import dateutil.parser
 import json
 import pycountry
 import re
@@ -11,7 +10,7 @@ from ckantoolkit import config
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.harvested_metadata import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
-from ckanext.dia.converters import strip_invalid_tags_content
+from ckanext.dia.converters import strip_invalid_tags_content, to_ckan_date
 from pyproj import Proj, transform
 from .clean_frequency import clean_frequency
 from ckan.plugins import toolkit as tk, implements, SingletonPlugin
@@ -423,21 +422,13 @@ class DIASpatialHarvester(SingletonPlugin):
 
 
 def _latest_date(*date_strs):
-    '''Returns the most recent of the given date strings, as the original
-    string, ignoring empty or unparseable values. Returns None if none parse.
-    '''
-    latest = None
-    latest_str = None
-    for date_str in date_strs:
-        if not date_str:
-            continue
-        try:
-            parsed = dateutil.parser.parse(date_str, ignoretz=True)
-        except (ValueError, OverflowError, TypeError):
-            continue
-        if latest is None or parsed > latest:
-            latest, latest_str = parsed, date_str
-    return latest_str
+    """Returns the most recent of the given dates, normalised for CKAN (see
+    to_ckan_date), ignoring empty or unparseable values. None if none parse.
+    """
+    dates = [to_ckan_date(date_str) for date_str in date_strs]
+    dates = [date for date in dates if date]
+    # Normalised ISO strings sort chronologically
+    return max(dates) if dates else None
 
 
 def _filter_rights(dia_values):
