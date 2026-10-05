@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import dateutil.parser
 import json
 import pycountry
 import re
@@ -262,6 +263,12 @@ class DIASpatialHarvester(SingletonPlugin):
             except (KeyError, IndexError):
                 pass
 
+        # ckanext-xloader only reloads a resource when its last_modified
+        # changes, so use whichever of date-updated / metadata-date is newer:
+        # a provider who bumps only metadata-date still signals a refresh.
+        resource_modified = _latest_date(
+            iso_values['date-updated'], iso_values['metadata-date'])
+
         # Override resource name, set it to package title if unset
         RESOURCE_NAME_CKAN_DEFAULT = tk._('Unnamed resource')
         package_title = package_dict.get('title', RESOURCE_NAME_CKAN_DEFAULT)
@@ -272,7 +279,7 @@ class DIASpatialHarvester(SingletonPlugin):
             # Set resouce_created and last_modified on resources to be
             # date-released and date-updated from the dataset respectively
             resource['resource_created'] = package_issued
-            resource['last_modified'] = package_modified
+            resource['last_modified'] = resource_modified
 
             data_format = dia_values['data-format']
             if len(data_format) != 0:
@@ -413,6 +420,24 @@ class DIASpatialHarvester(SingletonPlugin):
             )
 
         return package_dict
+
+
+def _latest_date(*date_strs):
+    '''Returns the most recent of the given date strings, as the original
+    string, ignoring empty or unparseable values. Returns None if none parse.
+    '''
+    latest = None
+    latest_str = None
+    for date_str in date_strs:
+        if not date_str:
+            continue
+        try:
+            parsed = dateutil.parser.parse(date_str, ignoretz=True)
+        except (ValueError, OverflowError, TypeError):
+            continue
+        if latest is None or parsed > latest:
+            latest, latest_str = parsed, date_str
+    return latest_str
 
 
 def _filter_rights(dia_values):
