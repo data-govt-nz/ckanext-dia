@@ -7,6 +7,7 @@ import traceback
 import re
 from urllib.parse import urlparse
 
+import dateutil.parser
 import requests
 
 from ckan import model
@@ -240,5 +241,22 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         )
         if package_theme_is_list:
             package_dict['theme'] = json.dumps(package_dict.get('theme'))
+
+        # DCAT-JSON (Project Open Data) distributions carry no modified date,
+        # so the dataset's `modified` is the provider's only signal that its
+        # data has been refreshed. Copy it to each resource's last_modified,
+        # as the CSW harvester does, so that ckanext-xloader reloads the
+        # DataStore when it changes even though the resource URL does not.
+        # An unparseable value would fail the schema's isodate validator and
+        # reject the whole dataset, so only copy it when it parses.
+        modified = dcat_dict.get('modified')
+        if modified:
+            try:
+                dateutil.parser.parse(modified)
+            except (ValueError, OverflowError, TypeError):
+                log.warning('Ignoring unparseable modified date %r', modified)
+            else:
+                for resource in package_dict.get('resources', []):
+                    resource['last_modified'] = modified
 
         return package_dict
