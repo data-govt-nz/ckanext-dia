@@ -9,6 +9,9 @@ from ckan.lib import helpers as h
 
 log = getLogger(__name__)
 
+# Fills the parts missing from a partial date; must never depend on today's date
+_PARTIAL_DATE_DEFAULT = datetime.datetime(2000, 1, 1)
+
 
 def fix_code_style_list(key, data, errors, context):
     """Grant's code style fix converter"""
@@ -58,11 +61,16 @@ def to_ckan_date(value):
     fractional digits), and a rejected resource `last_modified` fails the whole
     dataset, so convert to a naive UTC `isoformat()` string and check it with
     CKAN's own parser.
+
+    Partial dates ("2019", "2019-05") are valid ISO 8601, but dateutil fills the
+    missing parts from today's date, which would give the resource a new
+    last_modified (and an xloader reload) on every harvest. Fill them from a
+    fixed default instead so the result is stable.
     """
     if not value:
         return None
     try:
-        parsed = dateutil.parser.parse(value)
+        parsed = dateutil.parser.parse(value, default=_PARTIAL_DATE_DEFAULT)
         if parsed.tzinfo is not None:
             parsed = parsed.astimezone(
                 datetime.timezone.utc).replace(tzinfo=None)
