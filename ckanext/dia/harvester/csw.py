@@ -10,7 +10,7 @@ from ckantoolkit import config
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.harvested_metadata import MappedXmlDocument, ISOElement, ISODataFormat
 from ckan.logic.action.get import license_list
-from ckanext.dia.converters import strip_invalid_tags_content
+from ckanext.dia.converters import strip_invalid_tags_content, to_ckan_date
 from pyproj import Proj, transform
 from .clean_frequency import clean_frequency
 from ckan.plugins import toolkit as tk, implements, SingletonPlugin
@@ -262,6 +262,12 @@ class DIASpatialHarvester(SingletonPlugin):
             except (KeyError, IndexError):
                 pass
 
+        # ckanext-xloader only reloads a resource when its last_modified
+        # changes, so use whichever of date-updated / metadata-date is newer:
+        # a provider who bumps only metadata-date still signals a refresh.
+        resource_modified = _latest_date(
+            iso_values['date-updated'], iso_values['metadata-date'])
+
         # Override resource name, set it to package title if unset
         RESOURCE_NAME_CKAN_DEFAULT = tk._('Unnamed resource')
         package_title = package_dict.get('title', RESOURCE_NAME_CKAN_DEFAULT)
@@ -272,7 +278,7 @@ class DIASpatialHarvester(SingletonPlugin):
             # Set resouce_created and last_modified on resources to be
             # date-released and date-updated from the dataset respectively
             resource['resource_created'] = package_issued
-            resource['last_modified'] = package_modified
+            resource['last_modified'] = resource_modified
 
             data_format = dia_values['data-format']
             if len(data_format) != 0:
@@ -413,6 +419,16 @@ class DIASpatialHarvester(SingletonPlugin):
             )
 
         return package_dict
+
+
+def _latest_date(*date_strs):
+    """Returns the most recent of the given dates, normalised for CKAN (see
+    to_ckan_date), ignoring empty or unparseable values. None if none parse.
+    """
+    dates = [to_ckan_date(date_str) for date_str in date_strs]
+    dates = [date for date in dates if date]
+    # Normalised ISO strings sort chronologically
+    return max(dates) if dates else None
 
 
 def _filter_rights(dia_values):

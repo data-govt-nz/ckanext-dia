@@ -15,7 +15,7 @@ import ckan.plugins.toolkit as tk
 from ckan.logic.action.get import license_list
 from ckanext.dcat.harvesters import DCATJSONHarvester
 from ckanext.dcat.interfaces import IDCATRDFHarvester
-from ckanext.dia.converters import strip_invalid_tags_content
+from ckanext.dia.converters import strip_invalid_tags_content, to_ckan_date
 from ckanext.dia.harvester.clean_frequency import clean_frequency
 
 log = getLogger(__name__)
@@ -240,5 +240,17 @@ class DIADCATJSONHarvester(DCATJSONHarvester):
         )
         if package_theme_is_list:
             package_dict['theme'] = json.dumps(package_dict.get('theme'))
+
+        # DCAT-JSON (Project Open Data) distributions carry no modified date,
+        # so the dataset's `modified` is the provider's only signal that its
+        # data has been refreshed. Copy it to each resource's last_modified,
+        # as the CSW harvester does, so that ckanext-xloader reloads the
+        # DataStore when it changes even though the resource URL does not.
+        # CKAN's isodate validator rejects values it can't parse (e.g. a
+        # trailing Z), which would reject the whole dataset, so normalise first.
+        modified = to_ckan_date(dcat_dict.get('modified'))
+        if modified:
+            for resource in package_dict.get('resources', []):
+                resource['last_modified'] = modified
 
         return package_dict
