@@ -77,7 +77,7 @@ Options:
   `url_type=datastore` (data loaded only via the DataStore API, so not reloadable) are skipped.
   `datastore_active` is cleared on the resource; restoring the dataset later means the data
   must be reloaded (e.g. xloader resubmit).
-- `--grace-days N` -- with the flag above, only datasets last modified more than N days ago
+- `--grace-days N` -- with the flag above, only datasets with no edits or activity (including their deletion) in the last N days
   are cleaned (default 30).
 
 Thanks @opendata-swiss who wrote the command at https://github.com/opendata-swiss/ckanext-switzerland

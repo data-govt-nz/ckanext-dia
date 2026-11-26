@@ -228,9 +228,11 @@ def _find_tables_of_deleted_datasets(datastore_tables_chunk, grace_days):
     modified more than ``grace_days`` days ago.
 
     This is a single query against the CKAN DB per chunk rather than a
-    package_show per table. package.metadata_modified is bumped when a dataset
-    is deleted, so for a deleted dataset it is the deletion time unless
-    something touched it afterwards (which only makes us more conservative).
+    package_show per table. package_delete does not bump
+    package.metadata_modified, so the deletion time is taken from the activity
+    stream: the dataset must have no activity at all (including its 'deleted
+    package' activity) within the grace period, as well as an older
+    metadata_modified.
 
     Resources with url_type='datastore' hold data that was only ever loaded
     through the DataStore API, so the table cannot be rebuilt by xloader if
@@ -253,6 +255,14 @@ def _find_tables_of_deleted_datasets(datastore_tables_chunk, grace_days):
         model.Resource.id.in_(names),
         model.Package.state == 'deleted',
         model.Package.metadata_modified < cutoff,
+        ~sa.exists(
+            sa.select(sa.literal(1))
+            .select_from(sa.table('activity', sa.column('object_id'),
+                                  sa.column('timestamp')))
+            .where(sa.and_(
+                sa.column('object_id') == model.Package.id,
+                sa.column('timestamp') >= cutoff))
+        ),
     ).all()
     found = []
     skipped = 0
