@@ -107,9 +107,9 @@ def cleanup_datastore(include_deleted_datasets=False,
     if dry_run:
         print('DRY RUN complete. Tables that would be deleted: {} '
               '(of which {} belong to deleted datasets), '
-              'total size {:.2f} GB'.format(
+              'total size {}'.format(
                   would_delete, dataset_would_delete,
-                  would_delete_bytes / 1024.0 ** 3))
+                  _human_size(would_delete_bytes)))
         return
 
     updated_table_count = len(_get_all_datastore_tables(context))
@@ -272,6 +272,14 @@ def _find_tables_of_deleted_datasets(datastore_tables_chunk, grace_days):
             continue
         found.append(resource_id)
     return found, skipped
+
+
+def _human_size(num_bytes):
+    for unit in ('bytes', 'kB', 'MB', 'GB'):
+        if num_bytes < 1024 or unit == 'GB':
+            return ('{:.0f} {}' if unit == 'bytes' else '{:.2f} {}').format(
+                num_bytes, unit)
+        num_bytes /= 1024.0
 
 
 def _table_sizes(table_names):

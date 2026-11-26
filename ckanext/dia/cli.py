@@ -16,8 +16,9 @@ def dia():
 @click.option(
     '--include-deleted-datasets', is_flag=True, default=False,
     help=u'Also delete DataStore tables of resources whose dataset is '
-         u'soft-deleted (state=deleted) and was last modified more than '
-         u'--grace-days days ago. Off by default.')
+         u'soft-deleted (state=deleted) with no edits or activity '
+         u'(including its deletion) in the last --grace-days days. '
+         u'Off by default.')
 @click.option(
     '--grace-days', type=click.IntRange(min=0),
     default=utils.DEFAULT_DELETED_GRACE_DAYS, show_default=True,
