@@ -68,6 +68,18 @@ datastore_default it does not delete entries from archival, resource,
 resource_revision and resource_view.
 It also failed on the first run to delete some resources but they were deleted on subsequent runs.
 
+Options:
+
+- `--dry-run` -- report how many tables (and how many GB) would be deleted, delete nothing.
+- `--include-deleted-datasets` -- also delete tables of resources whose dataset is
+  soft-deleted (`state=deleted`). Off by default, because a sysadmin can still `resource_show`
+  such resources so they are not "orphans" in the normal sense. Tables of resources with
+  `url_type=datastore` (data loaded only via the DataStore API, so not reloadable) are skipped.
+  `datastore_active` is cleared on the resource; restoring the dataset later means the data
+  must be reloaded (e.g. xloader resubmit).
+- `--grace-days N` -- with the flag above, only datasets last modified more than N days ago
+  are cleaned (default 30).
+
 Thanks @opendata-swiss who wrote the command at https://github.com/opendata-swiss/ckanext-switzerland
 
 ### Initialise database for minting URIs
