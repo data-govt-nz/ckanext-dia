@@ -13,6 +13,7 @@ from ckan.logic.action.get import license_list
 from ckanext.dia.converters import strip_invalid_tags_content, to_ckan_date
 from pyproj import Proj, transform
 from .clean_frequency import clean_frequency
+from .resource_ids import copy_resource_ids_from_package
 from ckan.plugins import toolkit as tk, implements, SingletonPlugin
 
 log = getLogger(__name__)
@@ -283,6 +284,11 @@ class DIASpatialHarvester(SingletonPlugin):
             data_format = dia_values['data-format']
             if len(data_format) != 0:
                 resource['format'] = _filter_format(data_format[0]['name'])
+
+        # On an update, reuse the ids of the existing resources. Without them
+        # package_update deletes and recreates every resource (DATA-1485).
+        copy_resource_ids_from_package(
+            data_dict['harvest_object'].package_id, package_dict)
 
         frequency = _get_object_extra(package_dict, 'frequency-of-update')
         if frequency:
